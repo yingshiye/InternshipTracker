@@ -58,7 +58,7 @@ export function ApplicationList({
         <span>Applied</span>
         <span>Updated</span>
         <span>Next interview</span>
-        <span>Contact</span>
+        <span>Actions</span>
       </div>
 
       {/* Rows */}

@@ -23,8 +23,7 @@ export default async function DashboardPage() {
     .from("events")
     .select("*")
     .gte("event_date", now)
-    .order("event_date", { ascending: true })
-    .limit(5);
+    .order("event_date", { ascending: true });
 
   const apps = applications ?? [];
   const upcomingEvents = events ?? [];

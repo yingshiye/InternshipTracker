@@ -20,7 +20,7 @@ export function UpcomingPanel({ events }: { events: Event[] }) {
         <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
-        {events.map((event) => {
+        {events.slice(0, 5).map((event) => {
           const isOfferRelated = /offer|deadline/i.test(event.title);
           return (
             <div key={event.id} className="flex items-center gap-3">
