@@ -1,25 +1,22 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
-import { LoginForm } from "@/components/features/LoginForm";
+import { ForgotPasswordForm } from "@/components/features/ForgotPasswordForm";
 
 export const metadata: Metadata = {
-  title: "Sign in — Internship Tracker",
+  title: "Reset password — Internship Tracker",
 };
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   return (
     <div className="w-full max-w-sm">
       <div className="mb-6 text-center">
         <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100">
-          Sign in
+          Forgot your password?
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Track your internship applications
+          Enter your email and we&apos;ll send you a reset link
         </p>
       </div>
-      <Suspense fallback={null}>
-        <LoginForm />
-      </Suspense>
+      <ForgotPasswordForm />
     </div>
   );
 }

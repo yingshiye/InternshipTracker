@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,14 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-export function LoginForm() {
+export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const resetSuccess = searchParams.get("reset") === "success";
+  const [done, setDone] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,28 +20,34 @@ export function LoginForm() {
     setLoading(true);
 
     const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
     });
 
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push("/dashboard");
-      router.refresh();
+      setDone(true);
     }
+  }
+
+  if (done) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+            If an account exists for {email}, we&apos;ve sent a link to reset
+            your password.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card>
       <CardContent className="pt-6">
-        {resetSuccess && (
-          <p className="mb-4 text-center text-sm text-green-600 dark:text-green-400">
-            Your password has been updated. Sign in with your new password.
-          </p>
-        )}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">Email</Label>
@@ -59,40 +61,20 @@ export function LoginForm() {
               autoComplete="email"
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                href="/forgot-password"
-                className="text-xs text-gray-500 underline hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </div>
           {error && (
             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? "Sending…" : "Send reset link"}
           </Button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-500">
-          Don&apos;t have an account?{" "}
+          Remembered your password?{" "}
           <Link
-            href="/signup"
+            href="/login"
             className="text-gray-900 underline dark:text-gray-100"
           >
-            Sign up
+            Sign in
           </Link>
         </p>
       </CardContent>
