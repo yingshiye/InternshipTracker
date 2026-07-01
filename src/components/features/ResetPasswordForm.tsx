@@ -9,9 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
+type Status = "verifying" | "ready" | "invalid";
+
 export function ResetPasswordForm() {
-  const [ready, setReady] = useState(false);
-  const [invalid, setInvalid] = useState(false);
+  const [status, setStatus] = useState<Status>("verifying");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -21,23 +22,22 @@ export function ResetPasswordForm() {
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true);
-    });
-
+    // Only a genuine PASSWORD_RECOVERY event proves this session came from
+    // the emailed link — an ordinary getSession() check would also pass for
+    // any unrelated, already-logged-in session.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
-        setReady(true);
+        setStatus("ready");
       }
     });
 
+    // A late-arriving PASSWORD_RECOVERY event (e.g. slow PKCE code exchange)
+    // still overrides this via the unconditional setStatus("ready") above,
+    // so a valid link can never get stuck on "invalid".
     const timeout = setTimeout(() => {
-      setReady((current) => {
-        if (!current) setInvalid(true);
-        return current;
-      });
+      setStatus((current) => (current === "verifying" ? "invalid" : current));
     }, 3000);
 
     return () => {
@@ -69,12 +69,16 @@ export function ResetPasswordForm() {
     router.push("/login?reset=success");
   }
 
-  if (invalid) {
+  if (status === "invalid") {
     return (
       <Card>
         <CardContent className="pt-6">
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
             This reset link is invalid or has expired.
+          </p>
+          <p className="mt-2 text-center text-sm text-gray-500">
+            If you opened it on a different device or browser than the one
+            you requested it from, try opening it there instead.
           </p>
           <p className="mt-4 text-center text-sm text-gray-500">
             <Link
@@ -89,7 +93,7 @@ export function ResetPasswordForm() {
     );
   }
 
-  if (!ready) {
+  if (status === "verifying") {
     return (
       <Card>
         <CardContent className="pt-6">

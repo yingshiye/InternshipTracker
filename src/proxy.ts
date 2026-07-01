@@ -35,7 +35,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (user && (pathname === "/login" || pathname === "/signup")) {
+  const isPostResetLogin =
+    pathname === "/login" &&
+    request.nextUrl.searchParams.get("reset") === "success";
+
+  if (user && (pathname === "/signup" || pathname === "/login") && !isPostResetLogin) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
