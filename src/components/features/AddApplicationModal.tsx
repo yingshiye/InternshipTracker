@@ -84,11 +84,23 @@ export function AddApplicationModal() {
     if (error) {
       setError(error.message);
       setLoading(false);
-    } else {
-      setOpen(false);
-      setForm(EMPTY_FORM);
-      router.refresh();
+      return;
     }
+
+    if (form.job_url) {
+      await supabase.from("user_watchlist").upsert(
+        {
+          user_id: user.id,
+          company: form.company,
+          url: form.job_url,
+        },
+        { onConflict: "user_id,url", ignoreDuplicates: true }
+      );
+    }
+
+    setOpen(false);
+    setForm(EMPTY_FORM);
+    router.refresh();
   }
 
   return (
