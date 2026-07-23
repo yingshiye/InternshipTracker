@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/url.test.ts src/app/api/cron/check-jobs/logic.test.ts"
+    "test": "tsx --test src/lib/url.test.ts src/app/api/cron/check-jobs/logic.test.ts src/lib/resume/validate.test.ts src/lib/resume/rpc.test.ts src/lib/resume/compare.test.ts src/lib/resume/library.test.ts src/lib/resume/resumes.test.ts src/lib/resume/sections.test.ts src/lib/resume/entries.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
