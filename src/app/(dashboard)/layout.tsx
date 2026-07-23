@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard } from "lucide-react";
+import { LayoutDashboard, Eye } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/features/LogoutButton";
@@ -16,6 +16,11 @@ export default async function DashboardLayout({
 
   if (!user) redirect("/login");
 
+  const { count: changedCount } = await supabase
+    .from("user_watchlist")
+    .select("id", { count: "exact", head: true })
+    .eq("has_changes", true);
+
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-[220px] shrink-0 flex-col border-r border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-950">
@@ -31,6 +36,16 @@ export default async function DashboardLayout({
           >
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
+          </Link>
+          <Link
+            href="/watchlist"
+            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900"
+          >
+            <Eye className="h-4 w-4" />
+            Watchlist
+            {!!changedCount && (
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+            )}
           </Link>
         </nav>
         <div className="border-t border-gray-100 p-2 dark:border-gray-800">

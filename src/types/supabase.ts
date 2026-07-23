@@ -99,6 +99,61 @@ export type Database = {
         };
         Relationships: [];
       };
+      // TODO: regenerate with supabase gen types once Docker is available
+      url_snapshots: {
+        Row: {
+          id: string;
+          url: string;
+          content_hash: string | null;
+          last_checked: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          url: string;
+          content_hash?: string | null;
+          last_checked?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          url?: string;
+          content_hash?: string | null;
+          last_checked?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      user_watchlist: {
+        Row: {
+          id: string;
+          user_id: string;
+          url: string;
+          company: string;
+          has_changes: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          url: string;
+          company: string;
+          has_changes?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          url?: string;
+          company?: string;
+          has_changes?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
