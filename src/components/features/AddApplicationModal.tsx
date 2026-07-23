@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { normalizeUrl } from "@/lib/url";
 import type { ApplicationStatus } from "@/types/supabase";
 
 const STATUS_OPTIONS: { value: ApplicationStatus; label: string }[] = [
@@ -59,6 +60,17 @@ export function AddApplicationModal() {
     setError(null);
     setLoading(true);
 
+    let normalizedJobUrl: string | null = null;
+    if (form.job_url) {
+      try {
+        normalizedJobUrl = normalizeUrl(form.job_url);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Enter a valid job posting URL");
+        setLoading(false);
+        return;
+      }
+    }
+
     const supabase = getSupabaseBrowserClient();
     const {
       data: { user },
@@ -76,7 +88,7 @@ export function AddApplicationModal() {
       role: form.role,
       status: form.status,
       location: form.location || null,
-      job_url: form.job_url || null,
+      job_url: normalizedJobUrl,
       applied_date: form.applied_date || null,
       notes: form.notes || null,
     });
@@ -87,12 +99,14 @@ export function AddApplicationModal() {
       return;
     }
 
-    if (form.job_url) {
+    // The cron job (using the service-role key) is the only writer of
+    // url_snapshots — it creates the row on its first pass over this URL.
+    if (normalizedJobUrl) {
       await supabase.from("user_watchlist").upsert(
         {
           user_id: user.id,
           company: form.company,
-          url: form.job_url,
+          url: normalizedJobUrl,
         },
         { onConflict: "user_id,url", ignoreDuplicates: true }
       );

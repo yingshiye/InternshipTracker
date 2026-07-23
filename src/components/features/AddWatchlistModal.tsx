@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { normalizeUrl } from "@/lib/url";
 
 const EMPTY_FORM = {
   company: "",
@@ -36,6 +37,15 @@ export function AddWatchlistModal() {
     setError(null);
     setLoading(true);
 
+    let normalizedUrl: string;
+    try {
+      normalizedUrl = normalizeUrl(form.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Enter a valid URL");
+      setLoading(false);
+      return;
+    }
+
     const supabase = getSupabaseBrowserClient();
     const {
       data: { user },
@@ -47,10 +57,12 @@ export function AddWatchlistModal() {
       return;
     }
 
+    // The cron job (using the service-role key) is the only writer of
+    // url_snapshots — it creates the row on its first pass over this URL.
     const { error: insertError } = await supabase.from("user_watchlist").insert({
       user_id: user.id,
       company: form.company,
-      url: form.url,
+      url: normalizedUrl,
     });
 
     if (insertError) {
@@ -58,12 +70,6 @@ export function AddWatchlistModal() {
       setLoading(false);
       return;
     }
-
-    // Registers the URL for the next cron run — the cron populates
-    // content_hash on its first pass using the service role key.
-    await supabase
-      .from("url_snapshots")
-      .upsert({ url: form.url }, { onConflict: "url", ignoreDuplicates: true });
 
     setOpen(false);
     setForm(EMPTY_FORM);

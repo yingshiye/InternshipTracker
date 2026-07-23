@@ -130,7 +130,6 @@ export type Database = {
           user_id: string;
           url: string;
           company: string;
-          notified_hash: string | null;
           has_changes: boolean;
           created_at: string;
           updated_at: string;
@@ -140,7 +139,6 @@ export type Database = {
           user_id: string;
           url: string;
           company: string;
-          notified_hash?: string | null;
           has_changes?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -150,7 +148,6 @@ export type Database = {
           user_id?: string;
           url?: string;
           company?: string;
-          notified_hash?: string | null;
           has_changes?: boolean;
           created_at?: string;
           updated_at?: string;

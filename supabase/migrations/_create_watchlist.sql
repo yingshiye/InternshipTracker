@@ -1,6 +1,9 @@
 -- ─── url_snapshots ───────────────────────────────────────────────────────────
--- Global URL snapshot store (no user ownership, no RLS)
--- Only written to by the cron job via service role key
+-- Global URL snapshot store (no user ownership).
+-- RLS is enabled with zero policies: anon/authenticated clients get no
+-- access at all (even though they hold default table grants), while the
+-- service_role key used by the cron route bypasses RLS entirely. This is
+-- the only way to reach this table.
 create table url_snapshots (
   id            uuid primary key default gen_random_uuid(),
   url           text unique not null,
@@ -9,14 +12,19 @@ create table url_snapshots (
   created_at    timestamptz default now() not null
 );
 
+alter table url_snapshots enable row level security;
+
 -- ─── user_watchlist ──────────────────────────────────────────────────────────
 -- Per-user watchlist (RLS enabled)
+-- has_changes is the only per-user "seen" state; it is set to true by the
+-- cron job when url_snapshots.content_hash changes for this row's url, and
+-- cleared by the user via "mark as seen". No hash value needs to round-trip
+-- through the client, so the client never needs to read url_snapshots.
 create table user_watchlist (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid references auth.users(id) not null,
   url            text not null,
   company        text not null,
-  notified_hash  text,
   has_changes    boolean default false not null,
   created_at     timestamptz default now() not null,
   updated_at     timestamptz default now() not null,
