@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, Copy, Pencil, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, Pencil, SquarePen, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -142,10 +143,17 @@ function ResumeRow({ resume }: { resume: Resume }) {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <Link
+            href={`/resumes/${resume.id}`}
+            title="Open editor"
+            className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-900 dark:hover:text-gray-200"
+          >
+            <SquarePen className="h-3.5 w-3.5" />
+          </Link>
           <button
             type="button"
             onClick={() => setRenameOpen(true)}
-            title="Edit"
+            title="Rename"
             className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-900 dark:hover:text-gray-200"
           >
             <Pencil className="h-3.5 w-3.5" />
