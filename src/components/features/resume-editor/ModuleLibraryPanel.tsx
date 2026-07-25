@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useEditor } from "./useEditorController";
+import { AddSectionDialog } from "./AddSectionDialog";
 import type { LayoutKind } from "@/lib/resume/types";
 
 const KIND_LABEL: Record<LayoutKind, string> = { entry: "Experience", education: "Education", skills: "Skills" };
@@ -33,6 +34,9 @@ export function ModuleLibraryPanel() {
             aria-label="Search library blocks"
             className="w-full rounded-md border border-gray-200 py-1.5 pl-7 pr-2 text-sm dark:border-gray-700 dark:bg-gray-900"
           />
+        </div>
+        <div className="mt-2">
+          <AddSectionDialog />
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-2">

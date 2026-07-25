@@ -1,15 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useEffect, useMemo, useRef } from "react";
 import { useEditor } from "./useEditorController";
 import { useMeasurements } from "./MeasurementContext";
 import { useResumeMeasurement } from "./useResumeMeasurement";
@@ -18,15 +9,13 @@ import { SectionBlock } from "./SectionBlock";
 import { SortableList } from "./dnd/SortableList";
 import { PAGE_WIDTH_PX, DPI } from "@/lib/resume/measure";
 import { LINE_HEIGHT, SECTION_GAP_PT } from "@/lib/resume/style";
-import type { LayoutKind } from "@/lib/resume/types";
 
 const PT_TO_PX = DPI / 72;
 
 export function ResumePreview() {
-  const { draft, style, reorderSections, addSection } = useEditor();
+  const { draft, style, reorderSections } = useEditor();
   const { setMeasurements } = useMeasurements();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [adding, setAdding] = useState(false);
 
   const orderedSections = useMemo(
     () => [...draft.sections].sort((a, b) => a.sort_order - b.sort_order),
@@ -80,53 +69,6 @@ export function ResumePreview() {
         </div>
       </div>
 
-      <div className="mx-auto mt-4 flex items-center gap-2" style={{ width: PAGE_WIDTH_PX }}>
-        {adding ? (
-          <AddSectionInline
-            onCancel={() => setAdding(false)}
-            onAdd={(title, kind) => {
-              void addSection(title, kind);
-              setAdding(false);
-            }}
-          />
-        ) : (
-          <Button variant="outline" size="sm" onClick={() => setAdding(true)} className="gap-1.5">
-            <Plus className="h-4 w-4" /> Add section
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function AddSectionInline({ onAdd, onCancel }: { onAdd: (title: string, kind: LayoutKind) => void; onCancel: () => void }) {
-  const [title, setTitle] = useState("");
-  const [kind, setKind] = useState<LayoutKind>("entry");
-  return (
-    <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-950">
-      <input
-        autoFocus
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Section title"
-        className="rounded border border-gray-200 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900"
-      />
-      <Select value={kind} onValueChange={(v) => setKind(v as LayoutKind)}>
-        <SelectTrigger className="h-8 w-36 text-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="entry">Experience</SelectItem>
-          <SelectItem value="education">Education</SelectItem>
-          <SelectItem value="skills">Skills</SelectItem>
-        </SelectContent>
-      </Select>
-      <Button size="sm" disabled={!title.trim()} onClick={() => onAdd(title.trim(), kind)}>
-        Add
-      </Button>
-      <Button size="sm" variant="ghost" onClick={onCancel}>
-        Cancel
-      </Button>
     </div>
   );
 }

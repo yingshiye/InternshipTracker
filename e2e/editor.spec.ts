@@ -54,6 +54,7 @@ test("editor: create, add section, add entry, edit header, add bullet, and persi
 
   // Add a section.
   await page.getByRole("button", { name: "Add section" }).click();
+  await expect(page.getByRole("dialog", { name: "Add section" })).toBeVisible();
   await page.getByPlaceholder("Section title").fill("Experience");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByLabel("Section title")).toHaveValue("Experience");
