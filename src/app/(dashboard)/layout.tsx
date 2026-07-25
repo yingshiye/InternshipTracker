@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard, Eye } from "lucide-react";
+import { LayoutDashboard, Eye, FileText, Layers } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/features/LogoutButton";
@@ -46,6 +46,20 @@ export default async function DashboardLayout({
             {!!changedCount && (
               <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             )}
+          </Link>
+          <Link
+            href="/resumes"
+            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900"
+          >
+            <FileText className="h-4 w-4" />
+            Resumes
+          </Link>
+          <Link
+            href="/resume-blocks"
+            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-900"
+          >
+            <Layers className="h-4 w-4" />
+            Resume blocks
           </Link>
         </nav>
         <div className="border-t border-gray-100 p-2 dark:border-gray-800">
