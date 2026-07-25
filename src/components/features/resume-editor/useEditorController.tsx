@@ -9,6 +9,7 @@ import * as sectionsApi from "@/lib/resume/sections";
 import * as entriesApi from "@/lib/resume/entries";
 import * as resumesApi from "@/lib/resume/resumes";
 import { normalizeStyleSettings } from "@/lib/resume/style";
+import { loadResumeDraft } from "@/lib/resume/draft";
 import type { EditorDraft, SaveStatus, LibraryData, TabMessage, UndoThunk } from "./editor-types";
 import type { ResumeEntry, ResumeEntryBullet } from "@/lib/resume/types";
 
@@ -201,6 +202,18 @@ export function EditorProvider({
   const patchBulletLocal = useCallback((bulletId: string, patch: Partial<ResumeEntryBullet>) => {
     setDraft((d) => ({ ...d, bullets: d.bullets.map((b) => (b.id === bulletId ? { ...b, ...patch } : b)) }));
   }, []);
+
+  // Re-load the full draft from the database. Used after operations whose RPCs
+  // don't return the ids of newly-created child rows (copy_block_into_section,
+  // apply_library_update), so the client state always carries real ids. The
+  // client draft is useState-owned, so router.refresh() alone cannot update it.
+  const refetchDraft = useCallback(async () => {
+    const fresh = await loadResumeDraft(supabase, resumeId);
+    if (fresh) {
+      revisionRef.current = fresh.resume.revision;
+      setDraft(fresh);
+    }
+  }, [supabase, resumeId]);
 
   // Latest-state refs so debounced timer callbacks read current values.
   const headerRef = useRef(draft.header);
@@ -399,18 +412,19 @@ export function EditorProvider({
       await perform({
         call: (rev) => entriesApi.copyBlockIntoSection(supabase, resumeId, rev, sectionId, blockId, bulletIds),
         newRevision: (d) => d[0].revision,
-        onSuccess: () => router.refresh(),
+        // The RPC mints new bullet ids we don't receive — re-fetch for real ids.
+        onSuccess: () => void refetchDraft(),
         inverse: (d) => async () => {
           await perform({
             call: (rev) => entriesApi.removeEntry(supabase, resumeId, rev, d[0].entry_id),
             newRevision: (r) => r,
-            onSuccess: () => router.refresh(),
+            onSuccess: () => void refetchDraft(),
             record: "redo",
           });
         },
       });
     },
-    [perform, resumeId, supabase, router],
+    [perform, resumeId, supabase, refetchDraft],
   );
 
   const addCustomEntry = useCallback(
@@ -418,18 +432,31 @@ export function EditorProvider({
       await perform({
         call: (rev) => entriesApi.addCustomEntry(supabase, resumeId, rev, sectionId, { title: "" }),
         newRevision: (d) => d[0].revision,
-        onSuccess: () => router.refresh(),
+        onSuccess: (d) => {
+          const now = new Date().toISOString();
+          setDraft((p) => ({
+            ...p,
+            entries: [...p.entries, {
+              id: d[0].entry_id, user_id: p.resume.user_id, resume_id: resumeId, section_id: sectionId,
+              source_block_id: null, source_block_updated_at: null,
+              title: "", subtitle: null, organization: null, location: null, start_date: null, end_date: null,
+              education_data: null, skills_data: null,
+              sort_order: p.entries.filter((e) => e.section_id === sectionId).length + 1,
+              created_at: now, updated_at: now,
+            }],
+          }));
+        },
         inverse: (d) => async () => {
           await perform({
             call: (rev) => entriesApi.removeEntry(supabase, resumeId, rev, d[0].entry_id),
             newRevision: (r) => r,
-            onSuccess: () => router.refresh(),
+            onSuccess: () => setDraft((p) => ({ ...p, entries: p.entries.filter((e) => e.id !== d[0].entry_id) })),
             record: "redo",
           });
         },
       });
     },
-    [perform, resumeId, supabase, router],
+    [perform, resumeId, supabase],
   );
 
   const entriesRef = useRef(draft.entries);
@@ -541,21 +568,33 @@ export function EditorProvider({
 
   const addBulletFromLibrary = useCallback(
     async (entryId: string, libraryBulletId: string) => {
+      const libBullet = library.bullets.find((b) => b.id === libraryBulletId);
       await perform({
         call: (rev) => entriesApi.addBulletFromLibrary(supabase, resumeId, rev, entryId, libraryBulletId),
         newRevision: (d) => d[0].revision,
-        onSuccess: () => router.refresh(),
+        onSuccess: (d) => {
+          const now = new Date().toISOString();
+          setDraft((p) => ({
+            ...p,
+            bullets: [...p.bullets, {
+              id: d[0].bullet_id, user_id: p.resume.user_id, resume_id: resumeId, entry_id: entryId,
+              source_bullet_id: libraryBulletId, content: libBullet?.content ?? "",
+              sort_order: p.bullets.filter((b) => b.entry_id === entryId).length + 1,
+              created_at: now, updated_at: now,
+            }],
+          }));
+        },
         inverse: (d) => async () => {
           await perform({
             call: (rev) => entriesApi.removeEntryBullet(supabase, resumeId, rev, d[0].bullet_id),
             newRevision: (r) => r,
-            onSuccess: () => router.refresh(),
+            onSuccess: () => setDraft((p) => ({ ...p, bullets: p.bullets.filter((b) => b.id !== d[0].bullet_id) })),
             record: "redo",
           });
         },
       });
     },
-    [perform, resumeId, supabase, router],
+    [perform, resumeId, supabase, library.bullets],
   );
 
   const bulletsRef = useRef(draft.bullets);
@@ -650,7 +689,7 @@ export function EditorProvider({
         newRevision: (d) => d[0].revision,
         onSuccess: (d) => {
           patchBulletLocal(bulletId, { source_bullet_id: d[0].library_bullet_id });
-          router.refresh();
+          router.refresh(); // refresh library data (a prop) so the new bullet appears
         },
       });
       return data ? data[0].library_bullet_id : null;
@@ -663,11 +702,12 @@ export function EditorProvider({
       const data = await perform({
         call: (rev) => entriesApi.applyLibraryUpdate(supabase, resumeId, rev, entryId, sel),
         newRevision: (d) => d[0].revision,
-        onSuccess: () => router.refresh(),
+        // Adds/updates/removes multiple bullets with new ids — re-fetch for truth.
+        onSuccess: () => void refetchDraft(),
       });
       return data !== null;
     },
-    [perform, resumeId, supabase, router],
+    [perform, resumeId, supabase, refetchDraft],
   );
 
   // ── Style + target length ─────────────────────────────────────────────────
