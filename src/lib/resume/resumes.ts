@@ -4,6 +4,7 @@ import { callResumeRpc, type RpcResult } from "./rpc";
 import type { Resume, StyleSettings, TargetLength } from "./types";
 import { TARGET_LENGTHS } from "./types";
 import { ValidationError, normalizeOptionalText, normalizePlainText, validateCustomLinks, validateHttpUrl } from "./validate";
+import { normalizeStyleSettings } from "./style";
 
 // Every mutation in this file goes through a SECURITY DEFINER RPC —
 // `resumes`/`resume_headers` allow the client SELECT only; there is no
@@ -58,13 +59,12 @@ export async function updateResumeStyle(
   expectedRevision: number,
   styleSettings: StyleSettings,
 ): Promise<RpcResult<number>> {
-  if (typeof styleSettings !== "object" || styleSettings === null || Array.isArray(styleSettings)) {
-    throw new ValidationError("style_settings must be an object");
-  }
+  // Normalize to the full validated shape (fills defaults, coerces
+  // out-of-range values, drops unknown keys) so the stored jsonb is always clean.
   return callResumeRpc(supabase, "update_resume_style", {
     p_resume_id: resumeId,
     p_expected_revision: expectedRevision,
-    p_style_settings: styleSettings,
+    p_style_settings: normalizeStyleSettings(styleSettings),
   });
 }
 

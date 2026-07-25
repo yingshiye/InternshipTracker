@@ -59,3 +59,24 @@ export async function reorderSections(
     p_ordered_section_ids: orderedSectionIds,
   });
 }
+
+/**
+ * Undo of a section deletion. Step 1 only deletes empty sections, so this
+ * restores an empty section (new id) with the captured title, layout, and
+ * position.
+ */
+export async function restoreSection(
+  supabase: SupabaseClient<Database>,
+  resumeId: string,
+  expectedRevision: number,
+  input: { position: number; title: string; layoutKind: LayoutKind },
+): Promise<RpcResult<{ section_id: string; revision: number }[]>> {
+  if (!LAYOUT_KINDS.includes(input.layoutKind)) throw new ValidationError("Invalid layout_kind");
+  return callResumeRpc(supabase, "restore_section", {
+    p_resume_id: resumeId,
+    p_expected_revision: expectedRevision,
+    p_position: input.position,
+    p_title: normalizePlainText(input.title, "title"),
+    p_layout_kind: input.layoutKind,
+  });
+}

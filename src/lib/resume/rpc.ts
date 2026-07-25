@@ -16,28 +16,43 @@ export type RpcErrorReason =
   | "no_source_block"
   | "section_not_empty"
   | "invalid_reorder_set"
+  | "invalid_field_selection"
+  | "invalid_selection"
+  | "conflicting_selection"
+  | "removal_not_confirmed"
+  | "block_not_found"
+  | "invalid_snapshot"
   | "unknown";
 
 export type RpcResult<T> = { ok: true; data: T } | { ok: false; reason: RpcErrorReason; message: string };
 
-// Order matters only in that every value here must be checked — message
-// text is matched by substring since PostgREST may prefix/suffix the raw
-// `raise exception` text.
+// Message text is matched by substring since PostgREST may prefix/suffix the
+// raw `raise exception` text. Order matters: any reason that is a substring
+// of another must be listed AFTER the longer one, or the longer error would
+// be mis-mapped (e.g. "source_bullet_not_found" contains "bullet_not_found",
+// and "source_not_found" — so both source_* variants precede the shorter
+// ones here).
 const KNOWN_REASONS: RpcErrorReason[] = [
   "not_authenticated",
   "resume_not_found",
   "section_not_found",
   "entry_not_found",
+  "source_bullet_not_found",
   "bullet_not_found",
+  "block_not_found",
   "header_not_found",
   "has_versions",
   "revision_conflict",
   "layout_kind_mismatch",
   "source_not_found",
-  "source_bullet_not_found",
   "no_source_block",
   "section_not_empty",
   "invalid_reorder_set",
+  "invalid_field_selection",
+  "conflicting_selection",
+  "invalid_selection",
+  "removal_not_confirmed",
+  "invalid_snapshot",
 ];
 
 /**

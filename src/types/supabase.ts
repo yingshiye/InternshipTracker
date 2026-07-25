@@ -47,12 +47,27 @@ export type CustomLinks = {
   links: { label: string; url: string }[];
 };
 
+export type LineSpacing = "compact" | "standard" | "comfortable";
+export type BlockSpacing = "tight" | "standard" | "wide";
+export type DateFormat = "MM YYYY" | "MM/YYYY" | "YYYY";
+
+export type BodyFontSizePt = 9.5 | 10 | 10.5 | 11 | 11.5 | 12;
+export type NameFontSizePt = 16 | 18 | 20 | 22 | 24;
+export type HeadingFontSizePt = 10 | 11 | 12 | 13 | 14;
+export type MarginIn = 0.4 | 0.5 | 0.6 | 0.7 | 0.75 | 1;
+
+// Canonical (post-normalization) style settings. The DB stores a free-form
+// validated JSON object; `normalizeStyleSettings` fills every key with a
+// default, so the in-memory shape is fully required. No font-family field.
 export type StyleSettings = {
-  font_size_pt?: number;
-  line_spacing?: number;
-  margin_in?: number;
-  section_spacing_pt?: number;
-  date_format?: string;
+  body_font_size_pt: BodyFontSizePt;
+  name_font_size_pt: NameFontSizePt;
+  heading_font_size_pt: HeadingFontSizePt;
+  margin_in: MarginIn;
+  line_spacing: LineSpacing;
+  section_spacing: BlockSpacing;
+  bullet_spacing: BlockSpacing;
+  date_format: DateFormat;
 };
 
 export type Database = {
@@ -519,6 +534,99 @@ export type Database = {
       create_resume_version: {
         Args: { p_resume_id: string; p_expected_revision: number; p_version_type: VersionType };
         Returns: { version_id: string; version_number: number; created_at: string }[];
+      };
+      add_custom_entry: {
+        Args: {
+          p_resume_id: string;
+          p_expected_revision: number;
+          p_section_id: string;
+          p_title: string | null;
+          p_subtitle: string | null;
+          p_organization: string | null;
+          p_location: string | null;
+          p_start_date: string | null;
+          p_end_date: string | null;
+          p_education_data: Json | null;
+          p_skills_data: Json | null;
+        };
+        Returns: { entry_id: string; revision: number }[];
+      };
+      add_custom_bullet: {
+        Args: { p_resume_id: string; p_expected_revision: number; p_entry_id: string; p_content: string };
+        Returns: { bullet_id: string; revision: number }[];
+      };
+      apply_library_update: {
+        Args: {
+          p_resume_id: string;
+          p_expected_revision: number;
+          p_entry_id: string;
+          p_apply_fields: string[];
+          p_update_bullet_ids: string[];
+          p_add_library_bullet_ids: string[];
+          p_remove_bullet_ids: string[];
+          p_confirm_removals: boolean;
+        };
+        Returns: {
+          revision: number;
+          fields_applied: number;
+          bullets_updated: number;
+          bullets_added: number;
+          bullets_removed: number;
+        }[];
+      };
+      move_entry_to_position: {
+        Args: {
+          p_resume_id: string;
+          p_expected_revision: number;
+          p_entry_id: string;
+          p_target_section_id: string;
+          p_ordered_entry_ids: string[];
+        };
+        Returns: { revision: number; section_id: string; ordered_entry_ids: string[] }[];
+      };
+      save_bullet_as_library_bullet: {
+        Args: { p_resume_id: string; p_expected_revision: number; p_bullet_id: string; p_block_id: string };
+        Returns: { library_bullet_id: string; revision: number }[];
+      };
+      restore_entry: {
+        Args: {
+          p_resume_id: string;
+          p_expected_revision: number;
+          p_section_id: string;
+          p_position: number;
+          p_title: string | null;
+          p_subtitle: string | null;
+          p_organization: string | null;
+          p_location: string | null;
+          p_start_date: string | null;
+          p_end_date: string | null;
+          p_education_data: Json | null;
+          p_skills_data: Json | null;
+          p_source_block_id: string | null;
+          p_bullets: { content: string; source_bullet_id: string | null }[];
+        };
+        Returns: { entry_id: string; bullet_ids: string[]; revision: number }[];
+      };
+      restore_bullet: {
+        Args: {
+          p_resume_id: string;
+          p_expected_revision: number;
+          p_entry_id: string;
+          p_position: number;
+          p_content: string;
+          p_source_bullet_id: string | null;
+        };
+        Returns: { bullet_id: string; revision: number }[];
+      };
+      restore_section: {
+        Args: {
+          p_resume_id: string;
+          p_expected_revision: number;
+          p_position: number;
+          p_title: string;
+          p_layout_kind: LayoutKind;
+        };
+        Returns: { section_id: string; revision: number }[];
       };
     };
     Enums: {
