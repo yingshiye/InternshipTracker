@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -92,6 +93,7 @@ export function AddResumeBlockModal({ userId }: { userId: string }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base font-medium">Add block</DialogTitle>
+          <DialogDescription>Create a reusable library block you can copy into any resume.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pt-2">
           <div className="flex flex-col gap-1.5">

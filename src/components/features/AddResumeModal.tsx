@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -63,6 +64,7 @@ export function AddResumeModal() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base font-medium">New resume</DialogTitle>
+          <DialogDescription>Name your new resume and optionally set a target role and company. You can change these later.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-2">
           <div className="flex flex-col gap-1.5">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -88,6 +89,7 @@ export function EditResumeBlockModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base font-medium">Edit block</DialogTitle>
+          <DialogDescription>Update this library block’s details. Changes don’t affect resumes already using it until you update them.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pt-2">
           <div className="flex flex-col gap-1.5">

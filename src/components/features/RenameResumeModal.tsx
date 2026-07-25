@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -62,6 +63,7 @@ export function RenameResumeModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base font-medium">Edit resume</DialogTitle>
+          <DialogDescription>Update this resume’s name, target role, and target company.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-2">
           <div className="flex flex-col gap-1.5">
