@@ -4,12 +4,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { RpcResult } from "@/lib/resume/rpc";
-import type { StyleSettings, TargetLength, LayoutKind } from "@/lib/resume/types";
+import type { StyleSettings, TargetLength, LayoutKind, CustomLinks } from "@/lib/resume/types";
 import * as sectionsApi from "@/lib/resume/sections";
 import * as entriesApi from "@/lib/resume/entries";
 import * as resumesApi from "@/lib/resume/resumes";
+import * as versionsApi from "@/lib/resume/versions";
+import { describeRpcError } from "@/lib/resume/rpc";
 import { normalizeStyleSettings } from "@/lib/resume/style";
 import { loadResumeDraft } from "@/lib/resume/draft";
+import type { VersionType } from "@/lib/resume/types";
 import type { EditorDraft, SaveStatus, LibraryData, TabMessage, UndoThunk } from "./editor-types";
 import type { ResumeEntry, ResumeEntryBullet } from "@/lib/resume/types";
 
@@ -50,7 +53,8 @@ export type EditorController = {
   reorderBullets: (entryId: string, orderedIds: string[]) => Promise<void>;
   saveBulletToLibrary: (bulletId: string, blockId: string) => Promise<string | null>;
   applyLibraryUpdate: (entryId: string, sel: entriesApi.ApplyLibraryUpdateSelection) => Promise<boolean>;
-  // style
+  // resume metadata + style
+  updateMetadata: (input: { name: string; targetCompany: string | null; targetRole: string | null }) => Promise<boolean>;
   setStyle: (patch: Partial<StyleSettings>) => void;
   setTargetLength: (t: TargetLength) => Promise<void>;
   // undo/redo + conflict
@@ -59,6 +63,26 @@ export type EditorController = {
   reconcile: () => void;
   retryLast: () => void;
   lastError: string | null;
+  // ── Step 3 ────────────────────────────────────────────────────────────────
+  /** True while a debounced write is scheduled but has not run yet. */
+  hasUnsavedChanges: boolean;
+  /**
+   * Run every scheduled debounced write now and wait for the whole serial
+   * queue to drain. Resolves true when the draft is fully persisted.
+   * This is what makes "export the saved draft, not the editor state" real.
+   */
+  flushPendingSaves: () => Promise<boolean>;
+  /** The revision currently persisted on the server, as far as this tab knows. */
+  currentRevision: () => number;
+  /**
+   * Mint an immutable version. Never called by autosave — only by the
+   * checkpoint button, the export flow, and the submit flow.
+   */
+  createVersion: (
+    versionType: VersionType,
+  ) => Promise<{ ok: true; versionId: string; versionNumber: number } | { ok: false; message: string; conflict: boolean }>;
+  /** Atomic restore from one of this resume's own versions. */
+  restoreFromVersion: (versionId: string) => Promise<{ ok: true } | { ok: false; message: string }>;
 };
 
 export type HeaderFields = {
@@ -69,6 +93,8 @@ export type HeaderFields = {
   linkedin_url: string | null;
   github_url: string | null;
   portfolio_url: string | null;
+  /** Ordered extra links. Edited as a whole array, never field by field. */
+  custom_links: CustomLinks;
 };
 
 export type EntryFields = Pick<
@@ -103,19 +129,48 @@ export function EditorProvider({
   const [lastError, setLastError] = useState<string | null>(null);
   const [undoDepth, setUndoDepth] = useState(0);
   const [redoDepth, setRedoDepth] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const revisionRef = useRef(initialDraft.resume.revision);
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
   const undoStack = useRef<UndoThunk[]>([]);
   const redoStack = useRef<UndoThunk[]>([]);
   const lastFailedRef = useRef<(() => void) | null>(null);
-  const debounceTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Each pending debounce keeps its timer *and* the work it was going to do,
+  // so `flushPendingSaves` can run that work immediately instead of waiting
+  // out the delay. Without the stored thunk there would be no way to make
+  // "save everything now, then export" reliable.
+  const debounceTimers = useRef<Map<string, { timer: ReturnType<typeof setTimeout>; run: () => void }>>(new Map());
+  const conflictRef = useRef(false);
   const channelRef = useRef<BroadcastChannel | null>(null);
   const resumeId = initialDraft.resume.id;
 
   const syncStackDepth = useCallback(() => {
     setUndoDepth(undoStack.current.length);
     setRedoDepth(redoStack.current.length);
+  }, []);
+
+  /**
+   * Schedule a debounced write, replacing any pending write for the same key.
+   * `pendingCount` drives the "Unsaved changes" indicator, so it must be
+   * decremented on exactly one path — here, when the timer fires.
+   */
+  const scheduleDebounced = useCallback((key: string, run: () => void, delayMs = 700) => {
+    const existing = debounceTimers.current.get(key);
+    if (existing) {
+      clearTimeout(existing.timer);
+      debounceTimers.current.delete(key);
+      setPendingCount((n) => Math.max(0, n - 1));
+    }
+    const fire = () => {
+      debounceTimers.current.delete(key);
+      setPendingCount((n) => Math.max(0, n - 1));
+      run();
+    };
+    const timer = setTimeout(fire, delayMs);
+    debounceTimers.current.set(key, { timer, run: fire });
+    setPendingCount((n) => n + 1);
+    setSaveStatus((s) => (s === "failed" || s === "offline" ? s : "unsaved"));
   }, []);
 
   // ── Cross-tab conflict detection via BroadcastChannel ─────────────────────
@@ -154,6 +209,11 @@ export function EditorProvider({
     <T,>(args: PerformArgs<T>): Promise<T | null> => {
       const record = args.record ?? "undo";
       return enqueue(async () => {
+        // Once the server is known to be ahead, every queued write behind this
+        // point is based on a stale revision. Dropping them is what makes this
+        // not last-write-wins: nothing newer on the server is ever overwritten,
+        // and the local text stays in state for the user to re-apply.
+        if (conflictRef.current) return null;
         if (typeof navigator !== "undefined" && navigator.onLine === false) {
           setSaveStatus("offline");
           setLastError("You appear to be offline.");
@@ -182,13 +242,17 @@ export function EditorProvider({
           return result.data;
         }
         if (result.reason === "revision_conflict") {
+          conflictRef.current = true;
           setConflict(true);
           setSaveStatus("failed");
-          setLastError("This resume changed elsewhere. Reload to continue.");
+          setLastError(
+            "This resume changed somewhere else, so your last change was not saved. Reload to get the latest version — your unsaved text stays on screen until you do.",
+          );
           return null;
         }
         setSaveStatus("failed");
-        setLastError(result.message || "Save failed.");
+        // Raw Postgres/PostgREST text never reaches the UI.
+        setLastError(describeRpcError(result.reason));
         return null;
       });
     },
@@ -228,12 +292,7 @@ export function EditorProvider({
   const updateHeader = useCallback(
     (patch: Partial<HeaderFields>) => {
       setDraft((d) => (d.header ? { ...d, header: { ...d.header, ...patch } } : d));
-      const key = "header";
-      const existing = debounceTimers.current.get(key);
-      if (existing) clearTimeout(existing);
-      debounceTimers.current.set(
-        key,
-        setTimeout(() => {
+      scheduleDebounced("header", () => {
           const h = headerRef.current;
           if (!h) return;
           void perform({
@@ -252,10 +311,9 @@ export function EditorProvider({
             onSuccess: () => {},
             record: "none",
           });
-        }, 700),
-      );
+      });
     },
-    [perform, resumeId, supabase],
+    [perform, resumeId, supabase, scheduleDebounced],
   );
 
   // ── Sections ──────────────────────────────────────────────────────────────
@@ -467,12 +525,7 @@ export function EditorProvider({
     (entryId: string, patch: Partial<EntryFields>) => {
       const prev = entriesRef.current.find((e) => e.id === entryId);
       patchEntryLocal(entryId, patch);
-      const key = `entry:${entryId}`;
-      const existing = debounceTimers.current.get(key);
-      if (existing) clearTimeout(existing);
-      debounceTimers.current.set(
-        key,
-        setTimeout(() => {
+      scheduleDebounced(`entry:${entryId}`, () => {
           const e = entriesRef.current.find((x) => x.id === entryId);
           if (!e) return;
           const before = prev;
@@ -502,10 +555,9 @@ export function EditorProvider({
                 }
               : undefined,
           });
-        }, 700),
-      );
+      });
     },
-    [perform, resumeId, supabase, patchEntryLocal],
+    [perform, resumeId, supabase, patchEntryLocal, scheduleDebounced],
   );
 
   const moveEntryToPosition = useCallback(
@@ -605,12 +657,7 @@ export function EditorProvider({
     (bulletId: string, content: string) => {
       const before = bulletsRef.current.find((b) => b.id === bulletId)?.content ?? "";
       patchBulletLocal(bulletId, { content });
-      const key = `bullet:${bulletId}`;
-      const existing = debounceTimers.current.get(key);
-      if (existing) clearTimeout(existing);
-      debounceTimers.current.set(
-        key,
-        setTimeout(() => {
+      scheduleDebounced(`bullet:${bulletId}`, () => {
           const b = bulletsRef.current.find((x) => x.id === bulletId);
           if (!b) return;
           void perform({
@@ -627,10 +674,9 @@ export function EditorProvider({
               });
             },
           });
-        }, 700),
-      );
+      });
     },
-    [perform, resumeId, supabase, patchBulletLocal],
+    [perform, resumeId, supabase, patchBulletLocal, scheduleDebounced],
   );
 
   const removeBullet = useCallback(
@@ -762,6 +808,120 @@ export function EditorProvider({
     [perform, resumeId, supabase, draft.resume.target_length],
   );
 
+  // ── Resume metadata ───────────────────────────────────────────────────────
+  const updateMetadata = useCallback(
+    async (input: { name: string; targetCompany: string | null; targetRole: string | null }) => {
+      const before = {
+        name: draft.resume.name,
+        targetCompany: draft.resume.target_company,
+        targetRole: draft.resume.target_role,
+      };
+      const result = await perform({
+        call: (rev) => resumesApi.updateResumeMetadata(supabase, resumeId, rev, input),
+        newRevision: (r) => r,
+        onSuccess: () =>
+          setDraft((p) => ({
+            ...p,
+            resume: {
+              ...p.resume,
+              name: input.name,
+              target_company: input.targetCompany,
+              target_role: input.targetRole,
+            },
+          })),
+        inverse: () => async () => { await selfRef.current?.updateMetadata(before); },
+      });
+      return result !== null;
+    },
+    [perform, resumeId, supabase, draft.resume.name, draft.resume.target_company, draft.resume.target_role],
+  );
+
+  // ── Step 3: flush, versions, restore ──────────────────────────────────────
+  const flushPendingSaves = useCallback(async (): Promise<boolean> => {
+    // Fire every pending debounce right now…
+    for (const [, entry] of [...debounceTimers.current]) {
+      clearTimeout(entry.timer);
+      entry.run();
+    }
+    // …then wait for the serial write queue to drain past them. Enqueuing a
+    // no-op is enough: the queue runs strictly in order.
+    await enqueue(async () => undefined);
+    return !conflictRef.current && debounceTimers.current.size === 0;
+  }, [enqueue]);
+
+  const currentRevision = useCallback(() => revisionRef.current, []);
+
+  const versionInFlight = useRef(false);
+  const createVersion = useCallback(
+    async (versionType: VersionType) => {
+      // A second click while the first request is open would mint a duplicate
+      // version, and versions cannot be deleted.
+      if (versionInFlight.current) {
+        return { ok: false as const, message: "A version is already being created.", conflict: false };
+      }
+      versionInFlight.current = true;
+      try {
+        const result = await enqueue(() =>
+          versionsApi.createResumeVersion(supabase, resumeId, revisionRef.current, versionType),
+        );
+        if (result.ok) {
+          const row = result.data[0];
+          // create_resume_version deliberately does not bump the draft
+          // revision — a checkpoint is a photograph, not an edit.
+          return { ok: true as const, versionId: row.version_id, versionNumber: row.version_number };
+        }
+        if (result.reason === "revision_conflict") {
+          conflictRef.current = true;
+          setConflict(true);
+          return { ok: false as const, message: describeRpcError(result.reason), conflict: true };
+        }
+        return { ok: false as const, message: describeRpcError(result.reason), conflict: false };
+      } finally {
+        versionInFlight.current = false;
+      }
+    },
+    [enqueue, resumeId, supabase],
+  );
+
+  const restoreInFlight = useRef(false);
+  const restoreFromVersion = useCallback(
+    async (versionId: string) => {
+      if (restoreInFlight.current) {
+        return { ok: false as const, message: "A restore is already running." };
+      }
+      restoreInFlight.current = true;
+      try {
+        setSaveStatus("saving");
+        const result = await enqueue(() =>
+          versionsApi.restoreResumeFromVersion(supabase, resumeId, revisionRef.current, versionId),
+        );
+        if (!result.ok) {
+          if (result.reason === "revision_conflict") {
+            conflictRef.current = true;
+            setConflict(true);
+          }
+          setSaveStatus("failed");
+          setLastError(describeRpcError(result.reason));
+          return { ok: false as const, message: describeRpcError(result.reason) };
+        }
+        // The restore replaced every section/entry/bullet with new rows, so
+        // local ids are all stale — re-read rather than trying to patch.
+        revisionRef.current = result.data;
+        await refetchDraft();
+        undoStack.current = [];
+        redoStack.current = [];
+        syncStackDepth();
+        setSaveStatus("saved");
+        setLastError(null);
+        broadcast(result.data);
+        return { ok: true as const };
+      } finally {
+        restoreInFlight.current = false;
+      }
+    },
+    [enqueue, resumeId, supabase, refetchDraft, syncStackDepth, broadcast],
+  );
+
   // ── Undo / redo ───────────────────────────────────────────────────────────
   const undo = useCallback(async () => {
     if (conflict) return;
@@ -787,14 +947,23 @@ export function EditorProvider({
     if (t) t();
   }, []);
 
+  const hasUnsavedChanges = pendingCount > 0;
+  // "Unsaved changes" must win over a stale "Saved": a debounce scheduled
+  // after the last successful write means the screen is ahead of the server.
+  const effectiveStatus: SaveStatus =
+    hasUnsavedChanges && saveStatus !== "saving" && saveStatus !== "failed" && saveStatus !== "offline"
+      ? "unsaved"
+      : saveStatus;
+
   const controller: EditorController = {
-    draft, library, style, saveStatus, conflict,
+    draft, library, style, saveStatus: effectiveStatus, conflict,
     canUndo: undoDepth > 0, canRedo: redoDepth > 0,
     updateHeader, addSection, renameSection, deleteSection, reorderSections,
     copyBlock, addCustomEntry, updateEntry, removeEntry, moveEntryToPosition,
     addCustomBullet, addBulletFromLibrary, updateBullet, removeBullet, reorderBullets,
     saveBulletToLibrary, applyLibraryUpdate,
-    setStyle, setTargetLength, undo, redo, reconcile, retryLast, lastError,
+    updateMetadata, setStyle, setTargetLength, undo, redo, reconcile, retryLast, lastError,
+    hasUnsavedChanges, flushPendingSaves, currentRevision, createVersion, restoreFromVersion,
   };
 
   useEffect(() => {

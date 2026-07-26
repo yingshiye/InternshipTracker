@@ -1,0 +1,134 @@
+/*
+ * Print rules for resume export.
+ *
+ * A dedicated stylesheet rather than Tailwind utilities: @page, orphans,
+ * widows and page-break control have no utility equivalents, and the printed
+ * document has to be exactly right — an ATS reads what the PDF actually
+ * contains, so a stray editor control or a clipped line is a real defect.
+ *
+ * The printed page is rendered from an element portaled directly to
+ * <body> (#resume-print-portal). While printing, <body> carries the class
+ * `resume-printing`, and every other direct child of <body> is hidden. That
+ * is what guarantees no navigation, no toolbars, no dialogs and no overlays
+ * survive into the PDF: they are not merely styled away, they are display:
+ * none at the top level.
+ */
+
+@page {
+  size: Letter portrait;
+  /* Margins live on the page box, not on the content, so every physical page
+     gets the same edge — a content-side padding would only apply to page 1. */
+  margin: var(--resume-print-margin, 0.5in);
+}
+
+/* Off-screen but still laid out, so fonts load and heights are measurable
+   before the print dialog opens. `display: none` would defeat both. */
+#resume-print-portal {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  width: 8.5in;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Anything that is not the printable document is removed outright. */
+  body.resume-printing > *:not(#resume-print-portal) {
+    display: none !important;
+  }
+
+  body.resume-printing #resume-print-portal {
+    position: static !important;
+    left: auto !important;
+    width: auto !important;
+  }
+
+  .resume-print-document {
+    font-family: "Times New Roman", Times, serif;
+    color: #000;
+    background: #fff;
+    /* Page margins come from @page; the document must not add its own or the
+       first page would be inset twice. */
+    padding: 0;
+    margin: 0;
+    width: auto;
+  }
+
+  /* No screen affordances survive: shadows and rings render as grey smears,
+     and a page-boundary overlay would print as a line across the resume. */
+  .resume-print-document *,
+  .resume-print-document {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    outline: none !important;
+  }
+
+  .resume-print-page-marker,
+  [data-print-hide],
+  [role="tooltip"] {
+    display: none !important;
+  }
+
+  /* Keep a heading with the block it introduces, and never strand one line of
+     an entry alone at a page edge. */
+  .resume-print-section {
+    break-inside: auto;
+  }
+
+  .resume-print-section-heading {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  .resume-print-entry {
+    break-inside: avoid;
+  }
+
+  .resume-print-entry-head {
+    break-after: avoid;
+  }
+
+  .resume-print-header {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  .resume-print-document p,
+  .resume-print-document li {
+    orphans: 2;
+    widows: 2;
+    /* A long bullet may break across pages — clipping it would silently drop
+       text from the PDF, which is worse than a split line. */
+    break-inside: auto;
+    overflow-wrap: break-word;
+  }
+
+  .resume-print-document ul {
+    margin: 0;
+    padding-left: 1.2em;
+    list-style: disc;
+  }
+
+  /* Links keep their visible text; no printed URL is appended, because the
+     header already shows the address and a duplicate confuses an ATS. */
+  .resume-print-document a {
+    color: #000;
+    text-decoration: none;
+  }
+
+  .resume-print-document a::after {
+    content: "";
+  }
+
+  /* A trailing empty block would otherwise produce a blank final page. */
+  .resume-print-document > *:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+}

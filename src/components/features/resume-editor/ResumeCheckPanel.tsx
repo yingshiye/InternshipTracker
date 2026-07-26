@@ -6,6 +6,7 @@ import { useEditor } from "./useEditorController";
 import { useMeasurements } from "./MeasurementContext";
 import { useDismissedFindings } from "./useDismissedFindings";
 import { runResumeCheck, sortFindings, type Finding, type Severity } from "@/lib/resume/check";
+import { buildPreflightEntries } from "./preflight-input";
 
 const SEVERITY_META: Record<Severity, { icon: typeof AlertCircle; label: string; className: string }> = {
   error: { icon: AlertCircle, label: "Errors", className: "text-red-600" },
@@ -14,15 +15,28 @@ const SEVERITY_META: Record<Severity, { icon: typeof AlertCircle; label: string;
 };
 
 export function ResumeCheckPanel({ userId }: { userId: string }) {
-  const { draft, style, setStyle } = useEditor();
+  const { draft, library, style, setStyle } = useEditor();
   const { measurements } = useMeasurements();
   const { isDismissed, dismiss, pruneTo, restoreAll, dismissedCount } = useDismissedFindings(userId, draft.resume.id);
+
+  // The library-derived flags (orphaned source, unapplied update) are computed
+  // once here from the in-memory library rather than per rule.
+  const libraryFlags = useMemo(() => {
+    const map = new Map<string, { sourceMissing: boolean; libraryUpdateAvailable: boolean }>();
+    for (const e of buildPreflightEntries(draft, library)) {
+      map.set(e.id, { sourceMissing: e.sourceMissing, libraryUpdateAvailable: e.libraryUpdateAvailable });
+    }
+    return map;
+  }, [draft, library]);
 
   const findings = useMemo(() => {
     const sections = draft.sections.map((s) => ({ id: s.id, title: s.title, layout_kind: s.layout_kind }));
     const entries = draft.entries.map((e) => ({
       id: e.id, section_id: e.section_id, title: e.title, organization: e.organization,
       start_date: e.start_date, end_date: e.end_date, education_data: e.education_data, skills_data: e.skills_data,
+      source_block_id: e.source_block_id,
+      sourceMissing: libraryFlags.get(e.id)?.sourceMissing ?? false,
+      libraryUpdateAvailable: libraryFlags.get(e.id)?.libraryUpdateAvailable ?? false,
     }));
     const bullets = draft.bullets.map((b) => ({ id: b.id, entry_id: b.entry_id, content: b.content }));
     const header = draft.header
@@ -34,7 +48,7 @@ export function ResumeCheckPanel({ userId }: { userId: string }) {
     return sortFindings(
       runResumeCheck({ header, sections, entries, bullets, style, targetLength: draft.resume.target_length, measurements }),
     );
-  }, [draft, style, measurements]);
+  }, [draft, style, measurements, libraryFlags]);
 
   // Prune stored dismissals down to currently-active fingerprints.
   useEffect(() => {

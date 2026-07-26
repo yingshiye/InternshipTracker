@@ -33,6 +33,16 @@ export type CheckEntry = {
   end_date: string | null;
   education_data: EducationData | null;
   skills_data: SkillsData | null;
+  /**
+   * Library-link state. Optional so callers that have no library context
+   * (and every pre-existing caller) keep working unchanged — an absent flag
+   * simply means "nothing known", not "nothing wrong".
+   */
+  source_block_id?: string | null;
+  /** source_block_id points at a library block that no longer exists. */
+  sourceMissing?: boolean;
+  /** The source library block has changes this entry has not taken. */
+  libraryUpdateAvailable?: boolean;
 };
 export type CheckBullet = { id: string; entry_id: string; content: string };
 export type CheckHeader = {
@@ -162,6 +172,21 @@ export function runResumeCheck(input: ResumeCheckInput): Finding[] {
   if (!header || !header.email?.trim()) {
     push("missing_contact_email", "error", "header", null, "Add a contact email to the header.", header?.email ? "set" : "missing");
   }
+  // A resume with no reachable contact at all is a different, worse problem
+  // than a missing email specifically, so it gets its own finding.
+  const hasAnyContact = Boolean(
+    header &&
+      (header.email?.trim() ||
+        header.linkedin_url?.trim() ||
+        header.github_url?.trim() ||
+        header.portfolio_url?.trim()),
+  );
+  if (!hasAnyContact) {
+    push("missing_contact_method", "error", "header", null, "Add at least one way to contact you.", "none");
+  }
+  if (sections.length === 0 || entries.length === 0) {
+    push("empty_resume", "error", "resume", null, "This resume has no content yet.", `${sections.length}:${entries.length}`);
+  }
   for (const e of entries) {
     const layout = sectionById.get(e.section_id)?.layout_kind;
     if (layout === "entry" && !e.title?.trim() && !e.organization?.trim()) {
@@ -195,9 +220,54 @@ export function runResumeCheck(input: ResumeCheckInput): Finding[] {
       push("too_many_entries", "suggestion", "section", s.id, `Section "${s.title}" has ${es.length} entries.`, `${es.length}`);
     }
   }
+  // Two sections that read as the same heading are almost always an accident.
+  // Compared case- and punctuation-insensitively so "Technical Skills" and
+  // "technical skills" collide, which is the point.
+  const seenTitleKeys = new Map<string, string>();
+  for (const s of sections) {
+    const key = s.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    if (key === "") continue;
+    if (seenTitleKeys.has(key)) {
+      push("duplicate_section_title", "warning", "section", s.id, `Another section is also called "${s.title}".`, key);
+    } else {
+      seenTitleKeys.set(key, s.id);
+    }
+  }
+
   for (const e of entries) {
     const layout = sectionById.get(e.section_id)?.layout_kind;
     const es = bulletsByEntry.get(e.id) ?? [];
+
+    if (layout === "education") {
+      if (!e.title?.trim()) {
+        push("missing_education_institution", "warning", "entry", e.id, "This education entry has no institution.", "missing");
+      }
+      if (!e.education_data?.degree?.trim()) {
+        push("missing_education_degree", "warning", "entry", e.id, "This education entry has no degree.", "missing");
+      }
+    }
+
+    if (layout === "skills") {
+      for (const [i, cat] of (e.skills_data?.categories ?? []).entries()) {
+        if (cat.items.length === 0) {
+          push(
+            `empty_skills_category_${i}`,
+            "warning",
+            "entry",
+            e.id,
+            `Skills category "${cat.label || "Untitled"}" has no items.`,
+            `${i}:${cat.label}`,
+          );
+        }
+      }
+    }
+
+    if (e.sourceMissing) {
+      push("orphaned_source_reference", "warning", "entry", e.id, "The library block this entry came from no longer exists.", "orphaned");
+    }
+    if (e.libraryUpdateAvailable) {
+      push("library_update_available", "warning", "entry", e.id, "The source library block has changes you have not applied.", "available");
+    }
     if (layout === "entry" && es.length === 0) {
       push("entry_without_bullets", "warning", "entry", e.id, "This entry has no bullet points.", "none");
     }
