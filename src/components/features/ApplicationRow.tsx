@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Trash2, CalendarPlus } from "lucide-react";
+import { Pencil, Trash2, CalendarPlus, FileCheck2, FilePlus2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Tables } from "@/types/supabase";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { EditApplicationModal } from "./EditApplicationModal";
 import { AddEventModal } from "./AddEventModal";
+import { AttachResumeVersionDialog } from "./AttachResumeVersionDialog";
 
 type Application = Tables<"applications">;
 type Event = Tables<"events">;
@@ -64,6 +65,7 @@ export function ApplicationRow({
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
+  const [resumeOpen, setResumeOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const router = useRouter();
@@ -179,6 +181,30 @@ export function ApplicationRow({
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
+            onClick={() => setResumeOpen(true)}
+            title={
+              application.submitted_resume_version_id
+                ? "A submitted resume version is attached"
+                : "Attach a submitted resume version"
+            }
+            aria-label={
+              application.submitted_resume_version_id
+                ? "Change the attached resume version"
+                : "Attach a resume version"
+            }
+            className={`rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-800 ${
+              application.submitted_resume_version_id
+                ? "text-green-600 hover:text-green-700 dark:text-green-400"
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            }`}
+          >
+            {application.submitted_resume_version_id ? (
+              <FileCheck2 className="h-3.5 w-3.5" />
+            ) : (
+              <FilePlus2 className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <button
             onClick={() => setAddEventOpen(true)}
             title="Add event"
             className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
@@ -211,6 +237,14 @@ export function ApplicationRow({
         open={addEventOpen}
         onOpenChange={setAddEventOpen}
       />
+
+      {resumeOpen && (
+        <AttachResumeVersionDialog
+          application={application}
+          open={resumeOpen}
+          onOpenChange={setResumeOpen}
+        />
+      )}
 
       {/* Delete confirmation */}
       <Dialog

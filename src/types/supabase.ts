@@ -84,6 +84,10 @@ export type Database = {
           job_url: string | null;
           notes: string | null;
           applied_date: string | null;
+          // Step 3: the immutable resume version submitted with this
+          // application. Writable only through set_application_resume_version
+          // — a database trigger rejects any other write to this column.
+          submitted_resume_version_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -627,6 +631,19 @@ export type Database = {
           p_layout_kind: LayoutKind;
         };
         Returns: { section_id: string; revision: number }[];
+      };
+      // ── Step 3 ────────────────────────────────────────────────────────────
+      restore_resume_from_version: {
+        Args: { p_resume_id: string; p_expected_revision: number; p_version_id: string };
+        Returns: number;
+      };
+      set_application_resume_version: {
+        Args: {
+          p_application_id: string;
+          p_resume_version_id: string | null;
+          p_confirm_replace?: boolean;
+        };
+        Returns: boolean;
       };
     };
     Enums: {

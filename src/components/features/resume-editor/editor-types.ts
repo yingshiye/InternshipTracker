@@ -9,7 +9,12 @@ export type EditorDraft = {
   bullets: ResumeEntryBullet[];
 };
 
-export type SaveStatus = "idle" | "saving" | "saved" | "offline" | "failed" | "retrying";
+/**
+ * "unsaved" means a debounced write is scheduled but has not run yet — the
+ * one state the top bar must never render as "Saved". "saved" is only ever
+ * set after an RPC has actually returned ok.
+ */
+export type SaveStatus = "idle" | "unsaved" | "saving" | "saved" | "offline" | "failed" | "retrying";
 
 /** A same-browser cross-tab notification carried over BroadcastChannel. */
 export type TabMessage = {

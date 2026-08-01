@@ -91,7 +91,9 @@ export function EntryCard({
               <MoveRight className="pointer-events-none absolute right-1 top-1 hidden h-3 w-3" />
             </div>
           )}
-          <EntryIconBtn label="Delete entry" onClick={() => void removeEntry(entry.id)}>
+          {/* Wording matters: this only detaches the entry from this resume.
+              The master library block, if there is one, is untouched. */}
+          <EntryIconBtn label="Remove from this resume" onClick={() => void removeEntry(entry.id)}>
             <Trash2 className="h-3.5 w-3.5" />
           </EntryIconBtn>
         </div>
@@ -168,46 +170,192 @@ function EducationLayout({ entry, onUpdate, dateFormat }: { entry: ResumeEntry; 
         </span>
         <input value={entry.location ?? ""} onChange={(e) => onUpdate({ location: e.target.value })} placeholder="Location" aria-label="Location" style={{ ...inputStyle, fontStyle: "italic", textAlign: "right", width: "18ch" }} />
       </div>
-      <input value={edu.gpa ?? ""} onChange={(e) => setEdu({ gpa: e.target.value })} placeholder="GPA (optional)" aria-label="GPA" style={{ ...inputStyle }} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0 10px" }}>
+        <input value={edu.minor ?? ""} onChange={(e) => setEdu({ minor: e.target.value })} placeholder="Minor (optional)" aria-label="Minor" style={{ ...inputStyle, width: "22ch" }} />
+        <input value={edu.gpa ?? ""} onChange={(e) => setEdu({ gpa: e.target.value })} placeholder="GPA (optional)" aria-label="GPA" style={{ ...inputStyle, width: "22ch" }} />
+      </div>
+      {/* honors / coursework / details are string arrays in education_data.
+          They are edited as one comma-separated line each because that is how
+          they render on the resume; the split keeps order and drops blanks,
+          and the shared validator rejects anything with HTML or a newline. */}
+      <EduList label="Honors" values={edu.honors} onChange={(honors) => setEdu({ honors })} />
+      <EduList label="Coursework" values={edu.coursework} onChange={(coursework) => setEdu({ coursework })} />
+      <EduList label="Details" values={edu.details} onChange={(details) => setEdu({ details })} />
     </div>
   );
 }
 
+function EduList({
+  label,
+  values,
+  onChange,
+}: {
+  label: string;
+  values: string[] | undefined;
+  onChange: (next: string[]) => void;
+}) {
+  return (
+    <input
+      value={(values ?? []).join(", ")}
+      onChange={(e) => onChange(e.target.value.split(",").map((s) => s.trim()).filter(Boolean))}
+      placeholder={`${label} (comma separated, optional)`}
+      aria-label={label}
+      style={{ ...inputStyle, width: "100%" }}
+    />
+  );
+}
+
+/**
+ * Structured skills editing. Categories and the items inside them are both
+ * ordered lists, and order is what the printed resume shows, so both levels
+ * get explicit move up/down controls rather than relying on drag alone.
+ *
+ * Items are edited individually rather than as one comma-joined string: a
+ * single field cannot express "move this one skill left" and would silently
+ * mangle any skill containing a comma.
+ */
 function SkillsLayout({ entry, onUpdate }: { entry: ResumeEntry; onUpdate: UpdateFn }) {
   const skills = (entry.skills_data ?? { categories: [] }) as SkillsData;
-  const setCategories = (categories: SkillsData["categories"]) => onUpdate({ skills_data: { categories } });
+  const categories = skills.categories ?? [];
+  const setCategories = (next: SkillsData["categories"]) => onUpdate({ skills_data: { categories: next } });
+
+  const patchCategory = (i: number, patch: Partial<SkillsData["categories"][number]>) =>
+    setCategories(categories.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+
+  const moveIn = <T,>(list: T[], from: number, dir: -1 | 1): T[] | null => {
+    const to = from + dir;
+    if (to < 0 || to >= list.length) return null;
+    const next = [...list];
+    [next[from], next[to]] = [next[to], next[from]];
+    return next;
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      {skills.categories.map((cat, i) => (
-        <div key={i} style={{ display: "flex", gap: 6 }}>
-          <input
-            value={cat.label}
-            onChange={(e) => setCategories(skills.categories.map((c, j) => (j === i ? { ...c, label: e.target.value } : c)))}
-            placeholder="Category"
-            aria-label="Skill category"
-            style={{ ...inputStyle, fontWeight: 700, width: "16ch" }}
-          />
-          <input
-            value={cat.items.join(", ")}
-            onChange={(e) => setCategories(skills.categories.map((c, j) => (j === i ? { ...c, items: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) } : c)))}
-            placeholder="Comma, separated, skills"
-            aria-label="Skills"
-            style={{ ...inputStyle, flex: 1 }}
-          />
-          <button type="button" aria-label="Remove category" onClick={() => setCategories(skills.categories.filter((_, j) => j !== i))} className="text-gray-300 hover:text-red-500 print:hidden">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      {categories.map((cat, i) => (
+        <div key={i} className="group/cat">
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <input
+              value={cat.label}
+              onChange={(e) => patchCategory(i, { label: e.target.value })}
+              placeholder="Category"
+              aria-label={`Skill category ${i + 1} name`}
+              style={{ ...inputStyle, fontWeight: 700, width: "18ch" }}
+            />
+            <span style={{ fontWeight: 700 }}>:</span>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "2px 6px", flex: 1 }}>
+              {cat.items.map((item, k) => (
+                <span key={k} className="group/item inline-flex items-center gap-0.5">
+                  <input
+                    value={item}
+                    onChange={(e) =>
+                      patchCategory(i, { items: cat.items.map((s, m) => (m === k ? e.target.value : s)) })
+                    }
+                    aria-label={`${cat.label || `Category ${i + 1}`} skill ${k + 1}`}
+                    style={{ ...inputStyle, width: `${Math.max(4, item.length + 1)}ch` }}
+                  />
+                  <span className="inline-flex opacity-0 transition-opacity group-hover/item:opacity-100 print:hidden">
+                    <MicroBtn
+                      label={`Move skill ${k + 1} left`}
+                      disabled={k === 0}
+                      onClick={() => {
+                        const next = moveIn(cat.items, k, -1);
+                        if (next) patchCategory(i, { items: next });
+                      }}
+                    >
+                      <ChevronUp className="h-2.5 w-2.5 -rotate-90" />
+                    </MicroBtn>
+                    <MicroBtn
+                      label={`Move skill ${k + 1} right`}
+                      disabled={k === cat.items.length - 1}
+                      onClick={() => {
+                        const next = moveIn(cat.items, k, 1);
+                        if (next) patchCategory(i, { items: next });
+                      }}
+                    >
+                      <ChevronDown className="h-2.5 w-2.5 -rotate-90" />
+                    </MicroBtn>
+                    <MicroBtn
+                      label={`Delete skill ${k + 1}`}
+                      onClick={() => patchCategory(i, { items: cat.items.filter((_, m) => m !== k) })}
+                    >
+                      <Trash2 className="h-2.5 w-2.5" />
+                    </MicroBtn>
+                  </span>
+                  {k < cat.items.length - 1 && <span>,</span>}
+                </span>
+              ))}
+              <button
+                type="button"
+                onClick={() => patchCategory(i, { items: [...cat.items, "New skill"] })}
+                className="rounded text-xs text-gray-400 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-1 print:hidden"
+              >
+                + skill
+              </button>
+            </div>
+            <span className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/cat:opacity-100 print:hidden">
+              <MicroBtn
+                label={`Move category ${i + 1} up`}
+                disabled={i === 0}
+                onClick={() => {
+                  const next = moveIn(categories, i, -1);
+                  if (next) setCategories(next);
+                }}
+              >
+                <ChevronUp className="h-3 w-3" />
+              </MicroBtn>
+              <MicroBtn
+                label={`Move category ${i + 1} down`}
+                disabled={i === categories.length - 1}
+                onClick={() => {
+                  const next = moveIn(categories, i, 1);
+                  if (next) setCategories(next);
+                }}
+              >
+                <ChevronDown className="h-3 w-3" />
+              </MicroBtn>
+              <MicroBtn
+                label={`Delete category ${i + 1}`}
+                onClick={() => setCategories(categories.filter((_, j) => j !== i))}
+              >
+                <Trash2 className="h-3 w-3" />
+              </MicroBtn>
+            </span>
+          </div>
         </div>
       ))}
       <button
         type="button"
-        onClick={() => setCategories([...skills.categories, { label: "", items: [] }])}
-        className="self-start text-xs text-gray-400 hover:text-gray-600 print:hidden"
+        onClick={() => setCategories([...categories, { label: "New category", items: ["New skill"] }])}
+        className="self-start rounded text-xs text-gray-400 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-1 print:hidden"
       >
         + Add category
       </button>
     </div>
+  );
+}
+
+function MicroBtn({
+  label,
+  onClick,
+  disabled,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-1 dark:hover:bg-gray-800"
+    >
+      {children}
+    </button>
   );
 }
 
