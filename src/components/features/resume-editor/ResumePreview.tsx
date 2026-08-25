@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ZoomIn, ZoomOut, AlertTriangle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { ZoomIn, ZoomOut, Maximize2, AlertTriangle } from "lucide-react";
 import { useEditor } from "./useEditorController";
 import { useMeasurements } from "./MeasurementContext";
 import { useResumeMeasurement } from "./useResumeMeasurement";
@@ -12,13 +12,18 @@ import { PAGE_WIDTH_PX, DPI, printableHeightPx, targetPageLimit } from "@/lib/re
 import { LINE_HEIGHT, SECTION_GAP_PT } from "@/lib/resume/style";
 
 const PT_TO_PX = DPI / 72;
-const ZOOM_STEPS = [0.6, 0.75, 0.9, 1, 1.15, 1.3];
+const MIN_ZOOM = 0.3;
+const MAX_ZOOM = 2;
+const ZOOM_STEP = 0.1;
+const PAGE_HEIGHT_PX = 11 * DPI;
+const SCROLL_PADDING_PX = 64; // matches the p-8 padding on the scroll container
 
 export function ResumePreview() {
   const { draft, style, reorderSections } = useEditor();
   const { setMeasurements } = useMeasurements();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [zoomIndex, setZoomIndex] = useState(3); // 100%
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
 
   const orderedSections = useMemo(
     () => [...draft.sections].sort((a, b) => a.sort_order - b.sort_order),
@@ -39,7 +44,24 @@ export function ResumePreview() {
   const measurements = useResumeMeasurement(containerRef, style, signal);
   useEffect(() => setMeasurements(measurements), [measurements, setMeasurements]);
 
-  const zoom = ZOOM_STEPS[zoomIndex];
+  const fitToPage = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const availableWidth = el.clientWidth - SCROLL_PADDING_PX;
+    const availableHeight = el.clientHeight - SCROLL_PADDING_PX;
+    const totalHeight = PAGE_HEIGHT_PX * Math.max(1, measurements.pageCount);
+    const fit = Math.min(availableWidth / PAGE_WIDTH_PX, availableHeight / totalHeight);
+    setZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fit)));
+  }, [measurements.pageCount]);
+
+  // Fit the whole resume in view the first time we know how tall it is.
+  const didInitialFit = useRef(false);
+  useEffect(() => {
+    if (didInitialFit.current || measurements.pageCount === 0) return;
+    didInitialFit.current = true;
+    fitToPage();
+  }, [measurements.pageCount, fitToPage]);
+
   const pagePadding = style.margin_in * DPI;
   const printable = printableHeightPx(style.margin_in);
   const limit = targetPageLimit(draft.resume.target_length);
@@ -77,30 +99,9 @@ export function ResumePreview() {
           {limit !== null && ` · target ${limit} page${limit > 1 ? "s" : ""}`}
           {overTarget && " — over target"}
         </span>
-        <span className="flex items-center gap-1">
-          <button
-            type="button"
-            aria-label="Zoom out"
-            disabled={zoomIndex === 0}
-            onClick={() => setZoomIndex((i) => Math.max(0, i - 1))}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-800"
-          >
-            <ZoomOut className="h-3.5 w-3.5" />
-          </button>
-          <span className="w-10 text-center tabular-nums text-gray-500">{Math.round(zoom * 100)}%</span>
-          <button
-            type="button"
-            aria-label="Zoom in"
-            disabled={zoomIndex === ZOOM_STEPS.length - 1}
-            onClick={() => setZoomIndex((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-800"
-          >
-            <ZoomIn className="h-3.5 w-3.5" />
-          </button>
-        </span>
       </div>
 
-      <div className="flex-1 overflow-auto bg-gray-100 p-8 dark:bg-gray-900">
+      <div ref={scrollRef} className="relative flex-1 overflow-auto bg-gray-100 p-8 pb-14 dark:bg-gray-900">
         {/* Zoom scales the rendered page without changing its layout width, so
             measurement keeps working in real Letter pixels at any zoom. */}
         <div
@@ -147,6 +148,43 @@ export function ResumePreview() {
                 </SortableList>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="sticky bottom-2 left-0 z-10 mt-4 flex justify-center print:hidden">
+          <div className="flex items-center gap-1 rounded-full border border-gray-200 bg-white/95 px-2 py-1 text-xs shadow-md backdrop-blur dark:border-gray-700 dark:bg-gray-800/95">
+            <button
+              type="button"
+              aria-label="Zoom out"
+              disabled={zoom <= MIN_ZOOM}
+              onClick={() => setZoom((z) => Math.max(MIN_ZOOM, Math.round((z - ZOOM_STEP) * 100) / 100))}
+              className="rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-30 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </button>
+            <span className="w-11 text-center tabular-nums text-gray-600 dark:text-gray-300">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              type="button"
+              aria-label="Zoom in"
+              disabled={zoom >= MAX_ZOOM}
+              onClick={() => setZoom((z) => Math.min(MAX_ZOOM, Math.round((z + ZOOM_STEP) * 100) / 100))}
+              className="rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-30 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </button>
+            <div className="mx-1 h-4 w-px bg-gray-200 dark:bg-gray-600" />
+            <button
+              type="button"
+              aria-label="Fit whole resume in view"
+              title="Fit whole resume in view"
+              onClick={fitToPage}
+              className="flex items-center gap-1 rounded-full px-2 py-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+              Fit
+            </button>
           </div>
         </div>
       </div>
