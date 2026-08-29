@@ -8,7 +8,7 @@ import { SortableList } from "./dnd/SortableList";
 import { SaveAsLibraryBulletDialog } from "./SaveAsLibraryBulletDialog";
 import type { ResumeEntryBullet } from "@/lib/resume/types";
 
-export function BulletList({ entryId, hasSourceBlock }: { entryId: string; hasSourceBlock: boolean }) {
+export function BulletList({ entryId, hasSourceBlock, addLabel = "Add bullet" }: { entryId: string; hasSourceBlock: boolean; addLabel?: string }) {
   const { draft, library, addCustomBullet, addBulletFromLibrary, reorderBullets } = useEditor();
 
   const bullets = useMemo(
@@ -39,7 +39,7 @@ export function BulletList({ entryId, hasSourceBlock }: { entryId: string; hasSo
 
       <div className="mt-1 flex items-center gap-2 print:hidden">
         <button type="button" onClick={() => void addCustomBullet(entryId)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600">
-          <Plus className="h-3 w-3" /> Add bullet
+          <Plus className="h-3 w-3" /> {addLabel}
         </button>
         {hasSourceBlock && availableLibraryBullets.length > 0 && (
           <div className="relative">

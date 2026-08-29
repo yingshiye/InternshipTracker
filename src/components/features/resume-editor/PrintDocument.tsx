@@ -196,6 +196,11 @@ function PrintEntry({
         </div>
       </div>
 
+      {/* field_of_study/minor/gpa/honors/coursework/details have no editor UI
+          any more (EducationLayout only writes `degree` now), but existing
+          resumes/library blocks may still carry this data — keep rendering
+          it here read-only so nothing entered before this change silently
+          disappears from exports. */}
       {layout === "education" && edu && (
         <div style={{ display: "flex", flexDirection: "column" }}>
           {edu.minor && <span>Minor: {edu.minor}</span>}

@@ -102,7 +102,13 @@ export function EntryCard({
         {section.layout_kind === "education" && <EducationLayout entry={entry} onUpdate={(p) => updateEntry(entry.id, p)} dateFormat={style.date_format} />}
         {section.layout_kind === "skills" && <SkillsLayout entry={entry} onUpdate={(p) => updateEntry(entry.id, p)} />}
 
-        {section.layout_kind === "entry" && <BulletList entryId={entry.id} hasSourceBlock={hasLibraryLink} />}
+        {(section.layout_kind === "entry" || section.layout_kind === "education") && (
+          <BulletList
+            entryId={entry.id}
+            hasSourceBlock={hasLibraryLink}
+            addLabel={section.layout_kind === "education" ? "Add bullet (e.g. GPA, honors, relevant coursework)" : undefined}
+          />
+        )}
 
         {updateOpen && <LibraryUpdateDialog entryId={entry.id} open={updateOpen} onOpenChange={setUpdateOpen} />}
       </div>
@@ -164,44 +170,16 @@ function EducationLayout({ entry, onUpdate, dateFormat }: { entry: ResumeEntry; 
         <DateRangeEditor entry={entry} onUpdate={onUpdate} dateFormat={dateFormat} />
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ fontStyle: "italic", flex: 1 }} className="flex items-center gap-1">
-          <input value={edu.degree ?? ""} onChange={(e) => setEdu({ degree: e.target.value })} placeholder="Degree" aria-label="Degree" style={{ ...inputStyle, fontStyle: "italic", width: "18ch" }} />
-          <input value={edu.field_of_study ?? ""} onChange={(e) => setEdu({ field_of_study: e.target.value })} placeholder="Field of study" aria-label="Field of study" style={{ ...inputStyle, fontStyle: "italic", width: "20ch" }} />
-        </span>
+        <input
+          value={edu.degree ?? ""}
+          onChange={(e) => setEdu({ degree: e.target.value })}
+          placeholder="Degree (e.g. B.S. in Computer Science)"
+          aria-label="Degree"
+          style={{ ...inputStyle, fontStyle: "italic", flex: 1 }}
+        />
         <input value={entry.location ?? ""} onChange={(e) => onUpdate({ location: e.target.value })} placeholder="Location" aria-label="Location" style={{ ...inputStyle, fontStyle: "italic", textAlign: "right", width: "18ch" }} />
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "0 10px" }}>
-        <input value={edu.minor ?? ""} onChange={(e) => setEdu({ minor: e.target.value })} placeholder="Minor (optional)" aria-label="Minor" style={{ ...inputStyle, width: "22ch" }} />
-        <input value={edu.gpa ?? ""} onChange={(e) => setEdu({ gpa: e.target.value })} placeholder="GPA (optional)" aria-label="GPA" style={{ ...inputStyle, width: "22ch" }} />
-      </div>
-      {/* honors / coursework / details are string arrays in education_data.
-          They are edited as one comma-separated line each because that is how
-          they render on the resume; the split keeps order and drops blanks,
-          and the shared validator rejects anything with HTML or a newline. */}
-      <EduList label="Honors" values={edu.honors} onChange={(honors) => setEdu({ honors })} />
-      <EduList label="Coursework" values={edu.coursework} onChange={(coursework) => setEdu({ coursework })} />
-      <EduList label="Details" values={edu.details} onChange={(details) => setEdu({ details })} />
     </div>
-  );
-}
-
-function EduList({
-  label,
-  values,
-  onChange,
-}: {
-  label: string;
-  values: string[] | undefined;
-  onChange: (next: string[]) => void;
-}) {
-  return (
-    <input
-      value={(values ?? []).join(", ")}
-      onChange={(e) => onChange(e.target.value.split(",").map((s) => s.trim()).filter(Boolean))}
-      placeholder={`${label} (comma separated, optional)`}
-      aria-label={label}
-      style={{ ...inputStyle, width: "100%" }}
-    />
   );
 }
 

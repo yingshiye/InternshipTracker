@@ -165,6 +165,9 @@ function SnapshotEntryView({
         </span>
         {entry.location && <span style={{ fontStyle: "italic" }}>{entry.location}</span>}
       </div>
+      {/* field_of_study/minor/gpa/honors/coursework/details have no editor UI
+          any more, but existing snapshots may still carry this data — keep
+          rendering it read-only so version history stays accurate. */}
       {layout === "education" && edu && (
         <div style={{ display: "flex", flexDirection: "column" }}>
           {edu.minor && <span>Minor: {edu.minor}</span>}
