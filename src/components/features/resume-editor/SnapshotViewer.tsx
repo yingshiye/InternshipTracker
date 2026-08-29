@@ -159,21 +159,10 @@ function SnapshotEntryView({
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
         <span style={{ fontStyle: "italic" }}>
-          {layout === "education"
-            ? [edu?.degree, edu?.field_of_study].filter(Boolean).join(", ")
-            : entry.organization ?? ""}
+          {layout === "education" ? (edu?.degree ?? "") : entry.organization ?? ""}
         </span>
         {entry.location && <span style={{ fontStyle: "italic" }}>{entry.location}</span>}
       </div>
-      {layout === "education" && edu && (
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {edu.minor && <span>Minor: {edu.minor}</span>}
-          {edu.gpa && <span>GPA: {edu.gpa}</span>}
-          {edu.honors && edu.honors.length > 0 && <span>Honors: {edu.honors.join(", ")}</span>}
-          {edu.coursework && edu.coursework.length > 0 && <span>Coursework: {edu.coursework.join(", ")}</span>}
-          {edu.details?.map((d, i) => <span key={i}>{d}</span>)}
-        </div>
-      )}
       {entry.bullets.length > 0 && (
         <ul style={{ listStyle: "disc", paddingLeft: "1.2em", margin: 0 }}>
           {entry.bullets.map((b, i) => (
