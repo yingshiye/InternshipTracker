@@ -21,13 +21,20 @@ import {
 } from "@/components/ui/select";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { updateLibraryBlock } from "@/lib/resume/library";
-import type { LayoutKind, LibraryBlock } from "@/lib/resume/types";
+import type { EducationData, LayoutKind, LibraryBlock, SkillsData } from "@/lib/resume/types";
+import { LibraryBlockTypeFields } from "./LibraryBlockTypeFields";
 
 const LAYOUT_KIND_OPTIONS: { value: LayoutKind; label: string }[] = [
   { value: "entry", label: "Entry (experience, project, leadership…)" },
   { value: "education", label: "Education" },
   { value: "skills", label: "Skills" },
 ];
+
+const DEFAULT_SECTION_TITLES: Record<LayoutKind, string> = {
+  entry: "Experience",
+  education: "Education",
+  skills: "Skills",
+};
 
 export function EditResumeBlockModal({
   block,
@@ -38,17 +45,26 @@ export function EditResumeBlockModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const educationData = (block.education_data ?? {}) as EducationData;
+  const skillsData = (block.skills_data ?? { categories: [] }) as SkillsData;
   const [form, setForm] = useState({
     name: block.name,
     defaultSectionTitle: block.default_section_title,
     layoutKind: block.layout_kind,
     title: block.title ?? "",
-    subtitle: block.subtitle ?? "",
     organization: block.organization ?? "",
     location: block.location ?? "",
     startDate: block.start_date ?? "",
     endDate: block.end_date ?? "",
     isPresent: block.end_date === null,
+    degree: educationData.degree ?? block.subtitle ?? "",
+    fieldOfStudy: educationData.field_of_study ?? "",
+    minor: educationData.minor ?? "",
+    gpa: educationData.gpa ?? "",
+    skillCategories:
+      skillsData.categories.length > 0
+        ? skillsData.categories.map((category) => ({ ...category, items: [...category.items] }))
+        : [{ label: "", items: [""] }],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +72,17 @@ export function EditResumeBlockModal({
 
   function set<K extends keyof typeof form>(field: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function setLayoutKind(layoutKind: LayoutKind) {
+    setForm((prev) => ({
+      ...prev,
+      layoutKind,
+      defaultSectionTitle:
+        !prev.defaultSectionTitle || Object.values(DEFAULT_SECTION_TITLES).includes(prev.defaultSectionTitle)
+          ? DEFAULT_SECTION_TITLES[layoutKind]
+          : prev.defaultSectionTitle,
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -69,12 +96,32 @@ export function EditResumeBlockModal({
         name: form.name,
         defaultSectionTitle: form.defaultSectionTitle,
         layoutKind: form.layoutKind,
-        title: form.title || null,
-        subtitle: form.subtitle || null,
-        organization: form.organization || null,
-        location: form.location || null,
-        startDate: form.startDate || null,
-        endDate: form.endDate || null,
+        title: form.layoutKind === "skills" ? null : form.title || null,
+        subtitle: null,
+        organization: form.layoutKind === "entry" ? form.organization || null : null,
+        location: form.layoutKind === "skills" ? null : form.location || null,
+        startDate: form.layoutKind === "skills" ? null : form.startDate || null,
+        endDate: form.layoutKind === "skills" ? null : form.endDate || null,
+        educationData:
+          form.layoutKind === "education"
+            ? {
+                degree: form.degree,
+                field_of_study: form.fieldOfStudy,
+                minor: form.minor,
+                gpa: form.gpa,
+              }
+            : null,
+        skillsData:
+          form.layoutKind === "skills"
+            ? {
+                categories: form.skillCategories
+                  .filter(
+                    (category) =>
+                      category.label.trim() || category.items.some((item) => item.trim()),
+                  )
+                  .map((category) => ({ label: category.label, items: category.items })),
+              }
+            : null,
       });
       onOpenChange(false);
       router.refresh();
@@ -99,7 +146,7 @@ export function EditResumeBlockModal({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-block-layout-kind">Type</Label>
-            <Select value={form.layoutKind} onValueChange={(v) => set("layoutKind", v as LayoutKind)}>
+            <Select value={form.layoutKind} onValueChange={(v) => setLayoutKind(v as LayoutKind)}>
               <SelectTrigger id="edit-block-layout-kind" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -121,58 +168,12 @@ export function EditResumeBlockModal({
               required
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-block-title">Title (shown on the resume)</Label>
-            <Input id="edit-block-title" value={form.title} onChange={(e) => set("title", e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-block-subtitle">Subtitle</Label>
-            <Input id="edit-block-subtitle" value={form.subtitle} onChange={(e) => set("subtitle", e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-block-organization">Organization</Label>
-            <Input
-              id="edit-block-organization"
-              value={form.organization}
-              onChange={(e) => set("organization", e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-block-location">Location</Label>
-            <Input id="edit-block-location" value={form.location} onChange={(e) => set("location", e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="edit-block-start-date">Start date</Label>
-              <Input
-                id="edit-block-start-date"
-                type="date"
-                value={form.startDate}
-                onChange={(e) => set("startDate", e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="edit-block-end-date">End date</Label>
-              <Input
-                id="edit-block-end-date"
-                type="date"
-                value={form.endDate}
-                onChange={(e) => set("endDate", e.target.value)}
-                disabled={form.isPresent}
-              />
-              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <input
-                  type="checkbox"
-                  checked={form.isPresent}
-                  onChange={(e) => {
-                    set("isPresent", e.target.checked);
-                    if (e.target.checked) set("endDate", "");
-                  }}
-                />
-                Present
-              </label>
-            </div>
-          </div>
+          <LibraryBlockTypeFields
+            idPrefix="edit-block"
+            layoutKind={form.layoutKind}
+            details={form}
+            setDetail={(field, value) => setForm((prev) => ({ ...prev, [field]: value }))}
+          />
           {error && (
             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           )}

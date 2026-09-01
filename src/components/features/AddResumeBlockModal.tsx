@@ -24,6 +24,7 @@ import {
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { createLibraryBlock } from "@/lib/resume/library";
 import type { LayoutKind } from "@/lib/resume/types";
+import { LibraryBlockTypeFields } from "./LibraryBlockTypeFields";
 
 const LAYOUT_KIND_OPTIONS: { value: LayoutKind; label: string }[] = [
   { value: "entry", label: "Entry (experience, project, leadership…)" },
@@ -33,15 +34,25 @@ const LAYOUT_KIND_OPTIONS: { value: LayoutKind; label: string }[] = [
 
 const EMPTY_FORM = {
   name: "",
-  defaultSectionTitle: "",
+  defaultSectionTitle: "Experience",
   layoutKind: "entry" as LayoutKind,
   title: "",
-  subtitle: "",
   organization: "",
   location: "",
   startDate: "",
   endDate: "",
   isPresent: false,
+  degree: "",
+  fieldOfStudy: "",
+  minor: "",
+  gpa: "",
+  skillCategories: [{ label: "", items: [""] }],
+};
+
+const DEFAULT_SECTION_TITLES: Record<LayoutKind, string> = {
+  entry: "Experience",
+  education: "Education",
+  skills: "Skills",
 };
 
 export function AddResumeBlockModal({ userId }: { userId: string }) {
@@ -55,6 +66,17 @@ export function AddResumeBlockModal({ userId }: { userId: string }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  function setLayoutKind(layoutKind: LayoutKind) {
+    setForm((prev) => ({
+      ...prev,
+      layoutKind,
+      defaultSectionTitle:
+        !prev.defaultSectionTitle || Object.values(DEFAULT_SECTION_TITLES).includes(prev.defaultSectionTitle)
+          ? DEFAULT_SECTION_TITLES[layoutKind]
+          : prev.defaultSectionTitle,
+    }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -66,12 +88,32 @@ export function AddResumeBlockModal({ userId }: { userId: string }) {
         name: form.name,
         defaultSectionTitle: form.defaultSectionTitle,
         layoutKind: form.layoutKind,
-        title: form.title || null,
-        subtitle: form.subtitle || null,
-        organization: form.organization || null,
-        location: form.location || null,
-        startDate: form.startDate || null,
-        endDate: form.endDate || null,
+        title: form.layoutKind === "skills" ? null : form.title || null,
+        subtitle: null,
+        organization: form.layoutKind === "entry" ? form.organization || null : null,
+        location: form.layoutKind === "skills" ? null : form.location || null,
+        startDate: form.layoutKind === "skills" ? null : form.startDate || null,
+        endDate: form.layoutKind === "skills" ? null : form.endDate || null,
+        educationData:
+          form.layoutKind === "education"
+            ? {
+                degree: form.degree,
+                field_of_study: form.fieldOfStudy,
+                minor: form.minor,
+                gpa: form.gpa,
+              }
+            : null,
+        skillsData:
+          form.layoutKind === "skills"
+            ? {
+                categories: form.skillCategories
+                  .filter(
+                    (category) =>
+                      category.label.trim() || category.items.some((item) => item.trim()),
+                  )
+                  .map((category) => ({ label: category.label, items: category.items })),
+              }
+            : null,
       });
       setOpen(false);
       setForm(EMPTY_FORM);
@@ -109,7 +151,7 @@ export function AddResumeBlockModal({ userId }: { userId: string }) {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="block-layout-kind">Type</Label>
-            <Select value={form.layoutKind} onValueChange={(v) => set("layoutKind", v as LayoutKind)}>
+            <Select value={form.layoutKind} onValueChange={(v) => setLayoutKind(v as LayoutKind)}>
               <SelectTrigger id="block-layout-kind" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -132,73 +174,12 @@ export function AddResumeBlockModal({ userId }: { userId: string }) {
               required
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="block-title">Title (shown on the resume)</Label>
-            <Input
-              id="block-title"
-              placeholder="Software Engineer Intern"
-              value={form.title}
-              onChange={(e) => set("title", e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="block-subtitle">Subtitle</Label>
-            <Input
-              id="block-subtitle"
-              value={form.subtitle}
-              onChange={(e) => set("subtitle", e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="block-organization">Organization</Label>
-            <Input
-              id="block-organization"
-              placeholder="Google"
-              value={form.organization}
-              onChange={(e) => set("organization", e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="block-location">Location</Label>
-            <Input
-              id="block-location"
-              placeholder="Mountain View, CA"
-              value={form.location}
-              onChange={(e) => set("location", e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="block-start-date">Start date</Label>
-              <Input
-                id="block-start-date"
-                type="date"
-                value={form.startDate}
-                onChange={(e) => set("startDate", e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="block-end-date">End date</Label>
-              <Input
-                id="block-end-date"
-                type="date"
-                value={form.endDate}
-                onChange={(e) => set("endDate", e.target.value)}
-                disabled={form.isPresent}
-              />
-              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <input
-                  type="checkbox"
-                  checked={form.isPresent}
-                  onChange={(e) => {
-                    set("isPresent", e.target.checked);
-                    if (e.target.checked) set("endDate", "");
-                  }}
-                />
-                Present
-              </label>
-            </div>
-          </div>
+          <LibraryBlockTypeFields
+            idPrefix="block"
+            layoutKind={form.layoutKind}
+            details={form}
+            setDetail={(field, value) => setForm((prev) => ({ ...prev, [field]: value }))}
+          />
           {error && (
             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
