@@ -41,6 +41,7 @@ const EMPTY_FORM = {
   location: "",
   startDate: "",
   endDate: "",
+  isPresent: false,
 };
 
 export function AddResumeBlockModal({ userId }: { userId: string }) {
@@ -183,7 +184,19 @@ export function AddResumeBlockModal({ userId }: { userId: string }) {
                 type="date"
                 value={form.endDate}
                 onChange={(e) => set("endDate", e.target.value)}
+                disabled={form.isPresent}
               />
+              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <input
+                  type="checkbox"
+                  checked={form.isPresent}
+                  onChange={(e) => {
+                    set("isPresent", e.target.checked);
+                    if (e.target.checked) set("endDate", "");
+                  }}
+                />
+                Present
+              </label>
             </div>
           </div>
           {error && (
