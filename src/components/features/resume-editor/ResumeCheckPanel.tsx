@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { AlertCircle, AlertTriangle, Lightbulb, MapPin, Wand2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, AlertTriangle, ChevronDown, ChevronRight, Lightbulb, MapPin, Wand2, X } from "lucide-react";
 import { useEditor } from "./useEditorController";
 import { useMeasurements } from "./MeasurementContext";
 import { useDismissedFindings } from "./useDismissedFindings";
@@ -18,6 +18,7 @@ export function ResumeCheckPanel({ userId }: { userId: string }) {
   const { draft, library, style, setStyle } = useEditor();
   const { measurements } = useMeasurements();
   const { isDismissed, dismiss, pruneTo, restoreAll, dismissedCount } = useDismissedFindings(userId, draft.resume.id);
+  const [collapsed, setCollapsed] = useState(false);
 
   // The library-derived flags (orphaned source, unapplied update) are computed
   // once here from the in-memory library rather than per rule.
@@ -81,7 +82,15 @@ export function ResumeCheckPanel({ userId }: { userId: string }) {
   return (
     <div className="flex flex-1 flex-col p-3">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-gray-900 dark:text-gray-100">Resume Check</h2>
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          className="flex items-center gap-1 text-sm font-medium text-gray-900 dark:text-gray-100"
+        >
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          Resume Check
+          {collapsed && visible.length > 0 && <span className="text-xs font-normal text-gray-400">({visible.length})</span>}
+        </button>
         {dismissedCount > 0 && (
           <button type="button" onClick={restoreAll} className="text-xs text-gray-400 hover:text-gray-600">
             Restore {dismissedCount} dismissed
@@ -89,7 +98,7 @@ export function ResumeCheckPanel({ userId }: { userId: string }) {
         )}
       </div>
 
-      {visible.length === 0 ? (
+      {!collapsed && (visible.length === 0 ? (
         <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">No issues found.</p>
       ) : (
         <div className="flex flex-col gap-3">
@@ -129,7 +138,7 @@ export function ResumeCheckPanel({ userId }: { userId: string }) {
             );
           })}
         </div>
-      )}
+      ))}
     </div>
   );
 }

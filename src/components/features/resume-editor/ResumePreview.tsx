@@ -18,7 +18,8 @@ export function ResumePreview() {
   const { draft, style, reorderSections } = useEditor();
   const { setMeasurements } = useMeasurements();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [zoomIndex, setZoomIndex] = useState(3); // 100%
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
 
   const orderedSections = useMemo(
     () => [...draft.sections].sort((a, b) => a.sort_order - b.sort_order),
@@ -39,7 +40,22 @@ export function ResumePreview() {
   const measurements = useResumeMeasurement(containerRef, style, signal);
   useEffect(() => setMeasurements(measurements), [measurements, setMeasurements]);
 
-  const zoom = ZOOM_STEPS[zoomIndex];
+  const zoomOut = () => {
+    const lower = [...ZOOM_STEPS].reverse().find((s) => s < zoom);
+    setZoom(lower ?? ZOOM_STEPS[0]);
+  };
+  const zoomIn = () => {
+    const higher = ZOOM_STEPS.find((s) => s > zoom);
+    setZoom(higher ?? ZOOM_STEPS[ZOOM_STEPS.length - 1]);
+  };
+  const handleFit = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const available = el.clientWidth - 64; // subtract p-8 (2rem) horizontal padding
+    const fitZoom = available / PAGE_WIDTH_PX;
+    setZoom(Math.min(2, Math.max(0.3, fitZoom)));
+  };
+
   const pagePadding = style.margin_in * DPI;
   const printable = printableHeightPx(style.margin_in);
   const limit = targetPageLimit(draft.resume.target_length);
@@ -66,7 +82,7 @@ export function ResumePreview() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-3 py-1.5 text-xs print:hidden dark:border-gray-800">
+      <div className="flex items-center border-b border-gray-100 px-3 py-1.5 text-xs print:hidden dark:border-gray-800">
         <span
           className={`flex items-center gap-1.5 ${overTarget ? "text-amber-700 dark:text-amber-400" : "text-gray-500"}`}
           role="status"
@@ -77,13 +93,67 @@ export function ResumePreview() {
           {limit !== null && ` · target ${limit} page${limit > 1 ? "s" : ""}`}
           {overTarget && " — over target"}
         </span>
-        <span className="flex items-center gap-1">
+      </div>
+
+      <div className="relative flex-1 overflow-hidden">
+        <div ref={scrollRef} className="h-full overflow-auto bg-gray-100 p-8 dark:bg-gray-900">
+          {/* Zoom scales the rendered page without changing its layout width, so
+              measurement keeps working in real Letter pixels at any zoom. */}
+          <div
+            style={{
+              width: PAGE_WIDTH_PX * zoom,
+              margin: "0 auto",
+              transform: `scale(${zoom})`,
+              transformOrigin: "top left",
+            }}
+          >
+            <div className="relative shadow-sm ring-1 ring-gray-200 dark:ring-gray-700" style={pageStyle} ref={containerRef}>
+              {boundaries.map((b) => (
+                <div
+                  key={b.index}
+                  aria-hidden
+                  className="resume-print-page-marker pointer-events-none absolute left-0 right-0 print:hidden"
+                  style={{ top: b.top }}
+                >
+                  <div className="border-t border-dashed border-red-300" />
+                  <span className="absolute right-1 -top-4 text-[10px] text-red-400">page {b.index + 1}</span>
+                </div>
+              ))}
+
+              <div data-measure="content">
+                <EditableHeader />
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: SECTION_GAP_PT[style.section_spacing] * PT_TO_PX,
+                    marginTop: 8,
+                  }}
+                >
+                  <SortableList ids={orderedSections.map((s) => s.id)} onReorder={(ids) => void reorderSections(ids)}>
+                    {orderedSections.map((section, i) => (
+                      <SectionBlock
+                        key={section.id}
+                        section={section}
+                        index={i}
+                        total={orderedSections.length}
+                        orderedSectionIds={orderedSections.map((s) => s.id)}
+                      />
+                    ))}
+                  </SortableList>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-white px-2 py-1 text-xs shadow-md ring-1 ring-gray-200 print:hidden dark:bg-gray-800 dark:ring-gray-700">
           <button
             type="button"
             aria-label="Zoom out"
-            disabled={zoomIndex === 0}
-            onClick={() => setZoomIndex((i) => Math.max(0, i - 1))}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-800"
+            disabled={zoom <= ZOOM_STEPS[0]}
+            onClick={zoomOut}
+            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-700"
           >
             <ZoomOut className="h-3.5 w-3.5" />
           </button>
@@ -91,63 +161,20 @@ export function ResumePreview() {
           <button
             type="button"
             aria-label="Zoom in"
-            disabled={zoomIndex === ZOOM_STEPS.length - 1}
-            onClick={() => setZoomIndex((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-800"
+            disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]}
+            onClick={zoomIn}
+            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-700"
           >
             <ZoomIn className="h-3.5 w-3.5" />
           </button>
-        </span>
-      </div>
-
-      <div className="flex-1 overflow-auto bg-gray-100 p-8 dark:bg-gray-900">
-        {/* Zoom scales the rendered page without changing its layout width, so
-            measurement keeps working in real Letter pixels at any zoom. */}
-        <div
-          style={{
-            width: PAGE_WIDTH_PX * zoom,
-            margin: "0 auto",
-            transform: `scale(${zoom})`,
-            transformOrigin: "top left",
-          }}
-        >
-          <div className="relative shadow-sm ring-1 ring-gray-200 dark:ring-gray-700" style={pageStyle} ref={containerRef}>
-            {boundaries.map((b) => (
-              <div
-                key={b.index}
-                aria-hidden
-                className="resume-print-page-marker pointer-events-none absolute left-0 right-0 print:hidden"
-                style={{ top: b.top }}
-              >
-                <div className="border-t border-dashed border-red-300" />
-                <span className="absolute right-1 -top-4 text-[10px] text-red-400">page {b.index + 1}</span>
-              </div>
-            ))}
-
-            <div data-measure="content">
-              <EditableHeader />
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: SECTION_GAP_PT[style.section_spacing] * PT_TO_PX,
-                  marginTop: 8,
-                }}
-              >
-                <SortableList ids={orderedSections.map((s) => s.id)} onReorder={(ids) => void reorderSections(ids)}>
-                  {orderedSections.map((section, i) => (
-                    <SectionBlock
-                      key={section.id}
-                      section={section}
-                      index={i}
-                      total={orderedSections.length}
-                      orderedSectionIds={orderedSections.map((s) => s.id)}
-                    />
-                  ))}
-                </SortableList>
-              </div>
-            </div>
-          </div>
+          <span className="mx-1 h-4 w-px bg-gray-200 dark:bg-gray-600" aria-hidden />
+          <button
+            type="button"
+            onClick={handleFit}
+            className="rounded px-2 py-1 font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700"
+          >
+            Fit
+          </button>
         </div>
       </div>
     </div>
