@@ -57,8 +57,10 @@ export function EditResumeBlockModal({
     startDate: block.start_date ?? "",
     endDate: block.end_date ?? "",
     isPresent: block.end_date === null,
-    degree: educationData.degree ?? block.subtitle ?? "",
-    fieldOfStudy: educationData.field_of_study ?? "",
+    degree:
+      [educationData.degree ?? block.subtitle, educationData.field_of_study]
+        .filter(Boolean)
+        .join(", ") || "",
     minor: educationData.minor ?? "",
     gpa: educationData.gpa ?? "",
     skillCategories:
@@ -106,7 +108,6 @@ export function EditResumeBlockModal({
           form.layoutKind === "education"
             ? {
                 degree: form.degree,
-                field_of_study: form.fieldOfStudy,
                 minor: form.minor,
                 gpa: form.gpa,
               }
