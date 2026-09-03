@@ -91,6 +91,7 @@ export function SectionBlock({
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <SortableList
+            id={`entries:${section.id}`}
             ids={entryIds}
             onReorder={(ids) => {
               // Within-section reorder: any in-section entry id is a valid pivot.

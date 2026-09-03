@@ -271,15 +271,49 @@ export function EditorProvider({
   // don't return the ids of newly-created child rows (copy_block_into_section,
   // apply_library_update), so the client state always carries real ids. The
   // client draft is useState-owned, so router.refresh() alone cannot update it.
-  const refetchDraft = useCallback(async () => {
-    const fresh = await loadResumeDraft(supabase, resumeId);
-    if (fresh) {
+  //
+  // A field with a debounced write still pending (scheduled but not yet fired)
+  // has not reached the database yet, so the row this just read back is stale
+  // for that field specifically. Keeping the local value there — instead of
+  // letting this refetch clobber it — is what stops "copy a block right after
+  // editing the header" from reverting the edit: without this guard, the
+  // in-flight debounce would later fire reading `headerRef.current`, which the
+  // sync effect below would by then have overwritten with the stale value,
+  // turning a transient UI flicker into a real, persisted loss.
+  const refetchDraft = useCallback(
+    async (opts?: { force?: boolean }) => {
+      const fresh = await loadResumeDraft(supabase, resumeId);
+      if (!fresh) return;
       revisionRef.current = fresh.resume.revision;
-      setDraft(fresh);
-    }
-  }, [supabase, resumeId]);
+      if (opts?.force) {
+        setDraft(fresh);
+        return;
+      }
+      setDraft((prev) => {
+        const header = debounceTimers.current.has("header") ? prev.header : fresh.header;
+        const entries = fresh.entries.map((e) => {
+          const local = prev.entries.find((p) => p.id === e.id);
+          return local && debounceTimers.current.has(`entry:${e.id}`) ? local : e;
+        });
+        const bullets = fresh.bullets.map((b) => {
+          const local = prev.bullets.find((p) => p.id === b.id);
+          return local && debounceTimers.current.has(`bullet:${b.id}`) ? local : b;
+        });
+        return { ...fresh, header, entries, bullets };
+      });
+    },
+    [supabase, resumeId],
+  );
 
-  // Latest-state refs so debounced timer callbacks read current values.
+  // Latest-state refs so debounced timer callbacks read current values. Kept
+  // in sync two ways: this effect (for state changes that don't go through
+  // the update* helpers below, e.g. refetchDraft/restoreFromVersion), and a
+  // direct synchronous assignment inside each update* helper itself — the
+  // effect alone is not enough, because it only runs after React commits the
+  // render, which is too late for a caller that patches state and then
+  // immediately flushes the pending write in the same synchronous tick (see
+  // CustomLinksDialog.handleSave: updateHeader() followed straight away by
+  // flushPendingSaves(), with no render in between).
   const headerRef = useRef(draft.header);
   useEffect(() => {
     headerRef.current = draft.header;
@@ -291,7 +325,13 @@ export function EditorProvider({
   // ── Header (debounced text) ───────────────────────────────────────────────
   const updateHeader = useCallback(
     (patch: Partial<HeaderFields>) => {
-      setDraft((d) => (d.header ? { ...d, header: { ...d.header, ...patch } } : d));
+      if (!headerRef.current) return;
+      // Synchronous, not via the effect above: a caller may read headerRef
+      // through a debounce fired by an immediate flushPendingSaves() call
+      // before React has re-rendered, and that read must see this patch.
+      const next = { ...headerRef.current, ...patch };
+      headerRef.current = next;
+      setDraft((d) => (d.header ? { ...d, header: next } : d));
       scheduleDebounced("header", () => {
           const h = headerRef.current;
           if (!h) return;
@@ -906,8 +946,10 @@ export function EditorProvider({
         }
         // The restore replaced every section/entry/bullet with new rows, so
         // local ids are all stale — re-read rather than trying to patch.
+        // Forced: a restore is an intentional, atomic full replace, so it must
+        // win even over a field with a (stale, pre-restore) pending debounce.
         revisionRef.current = result.data;
-        await refetchDraft();
+        await refetchDraft({ force: true });
         undoStack.current = [];
         redoStack.current = [];
         syncStackDepth();

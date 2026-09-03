@@ -130,7 +130,11 @@ export function ResumePreview() {
                     marginTop: 8,
                   }}
                 >
-                  <SortableList ids={orderedSections.map((s) => s.id)} onReorder={(ids) => void reorderSections(ids)}>
+                  <SortableList
+                    id={`sections:${draft.resume.id}`}
+                    ids={orderedSections.map((s) => s.id)}
+                    onReorder={(ids) => void reorderSections(ids)}
+                  >
                     {orderedSections.map((section, i) => (
                       <SectionBlock
                         key={section.id}

@@ -30,7 +30,7 @@ export function BulletList({ entryId, hasSourceBlock, addLabel = "Add bullet" }:
   return (
     <div style={{ marginTop: 2 }}>
       <ul style={{ listStyle: "disc", paddingLeft: "1.2em", margin: 0 }}>
-        <SortableList ids={ids} onReorder={(next) => void reorderBullets(entryId, next)}>
+        <SortableList id={`bullets:${entryId}`} ids={ids} onReorder={(next) => void reorderBullets(entryId, next)}>
           {bullets.map((bullet, i) => (
             <BulletRow key={bullet.id} bullet={bullet} index={i} total={bullets.length} entryId={entryId} />
           ))}
