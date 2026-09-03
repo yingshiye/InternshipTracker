@@ -29,7 +29,7 @@ export default async function ResumesPage() {
           Resumes
         </h1>
         <p className="text-sm text-gray-500">
-          Manage your resume drafts. The visual editor is coming in a later step.
+          Manage your resume drafts, or open one in the editor to build it out.
         </p>
       </div>
       <ResumesPanel activeResumes={activeResumes ?? []} archivedResumes={archivedResumes ?? []} />
