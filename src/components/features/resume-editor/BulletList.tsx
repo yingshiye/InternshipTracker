@@ -71,7 +71,7 @@ export function BulletList({ entryId, hasSourceBlock, addLabel = "Add bullet" }:
 }
 
 function BulletRow({ bullet, index, total, entryId }: { bullet: ResumeEntryBullet; index: number; total: number; entryId: string }) {
-  const { library, updateBullet, removeBullet, reorderBullets, draft } = useEditor();
+  const { updateBullet, removeBullet, reorderBullets, draft } = useEditor();
   const [saveOpen, setSaveOpen] = useState(false);
 
   const move = (dir: -1 | 1) => {
@@ -111,11 +111,9 @@ function BulletRow({ bullet, index, total, entryId }: { bullet: ResumeEntryBulle
             <MiniBtn label="Move bullet down" onClick={() => move(1)} disabled={index === total - 1}>
               <ChevronDown className="h-3 w-3" />
             </MiniBtn>
-            {library.blocks.length > 0 && (
-              <MiniBtn label="Save as library bullet" onClick={() => setSaveOpen(true)}>
-                <BookmarkPlus className="h-3 w-3" />
-              </MiniBtn>
-            )}
+            <MiniBtn label="Save as library bullet" onClick={() => setSaveOpen(true)}>
+              <BookmarkPlus className="h-3 w-3" />
+            </MiniBtn>
             <MiniBtn label="Delete bullet" onClick={() => void removeBullet(bullet.id)}>
               <Trash2 className="h-3 w-3" />
             </MiniBtn>

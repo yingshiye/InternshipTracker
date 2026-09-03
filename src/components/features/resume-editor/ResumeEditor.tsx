@@ -43,7 +43,7 @@ export function ResumeEditor({
   const [pane, setPane] = useState<Pane>("resume");
 
   return (
-    <EditorProvider initialDraft={initialDraft} library={library} tabId={tabId}>
+    <EditorProvider initialDraft={initialDraft} library={library} tabId={tabId} userId={userId}>
       <MeasurementProvider>
         <div className="flex h-screen flex-col">
           <EditorTopBar userId={userId} />
