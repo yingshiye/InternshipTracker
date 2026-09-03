@@ -4,6 +4,7 @@ import { Lock } from "lucide-react";
 import { DPI, PAGE_WIDTH_PX } from "@/lib/resume/measure";
 import { LINE_HEIGHT, SECTION_GAP_PT, BULLET_GAP_PT } from "@/lib/resume/style";
 import { formatDateRange } from "@/lib/resume/dates";
+import { educationSubtitle, EducationExtraLines } from "./EducationExtras";
 import type { ParsedSnapshot, SnapshotEntry } from "@/lib/resume/snapshot";
 
 const PT_TO_PX = DPI / 72;
@@ -159,24 +160,11 @@ function SnapshotEntryView({
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
         <span style={{ fontStyle: "italic" }}>
-          {layout === "education"
-            ? [edu?.degree, edu?.field_of_study].filter(Boolean).join(", ")
-            : entry.organization ?? ""}
+          {layout === "education" ? educationSubtitle(edu) : entry.organization ?? ""}
         </span>
         {entry.location && <span style={{ fontStyle: "italic" }}>{entry.location}</span>}
       </div>
-      {/* field_of_study/minor/gpa/honors/coursework/details have no editor UI
-          any more, but existing snapshots may still carry this data — keep
-          rendering it read-only so version history stays accurate. */}
-      {layout === "education" && edu && (
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {edu.minor && <span>Minor: {edu.minor}</span>}
-          {edu.gpa && <span>GPA: {edu.gpa}</span>}
-          {edu.honors && edu.honors.length > 0 && <span>Honors: {edu.honors.join(", ")}</span>}
-          {edu.coursework && edu.coursework.length > 0 && <span>Coursework: {edu.coursework.join(", ")}</span>}
-          {edu.details?.map((d, i) => <span key={i}>{d}</span>)}
-        </div>
-      )}
+      {layout === "education" && <EducationExtraLines edu={edu} />}
       {entry.bullets.length > 0 && (
         <ul style={{ listStyle: "disc", paddingLeft: "1.2em", margin: 0 }}>
           {entry.bullets.map((b, i) => (

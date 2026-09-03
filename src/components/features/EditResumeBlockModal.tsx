@@ -107,6 +107,14 @@ export function EditResumeBlockModal({
         educationData:
           form.layoutKind === "education"
             ? {
+                // honors/coursework/details have no editor field — carry
+                // forward whatever the block already had so editing degree/
+                // minor/gpa doesn't silently delete them. field_of_study is
+                // intentionally dropped: its text is now folded into `degree`
+                // on load (see the `form.degree` initializer above).
+                honors: educationData.honors,
+                coursework: educationData.coursework,
+                details: educationData.details,
                 degree: form.degree,
                 minor: form.minor,
                 gpa: form.gpa,

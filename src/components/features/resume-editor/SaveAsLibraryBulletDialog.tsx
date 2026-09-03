@@ -30,32 +30,39 @@ export function SaveAsLibraryBulletDialog({ bulletId, open, onOpenChange }: { bu
   const [error, setError] = useState<string | null>(null);
 
   const save = async () => {
+    if (mode === "new" && !newBlockName.trim()) {
+      setError("Give the new block a name.");
+      return;
+    }
     setBusy(true);
     setError(null);
-    let id: string | null = null;
-    if (mode === "new") {
-      if (!newBlockName.trim()) {
-        setBusy(false);
-        setError("Give the new block a name.");
-        return;
+    try {
+      let id: string | null = null;
+      if (mode === "new") {
+        id = await createLibraryBlockAndSaveBullet(bulletId, {
+          name: newBlockName,
+          defaultSectionTitle: section?.title ?? newBlockName,
+          layoutKind,
+          title: entry?.title ?? null,
+          organization: entry?.organization ?? null,
+          location: entry?.location ?? null,
+          startDate: entry?.start_date ?? null,
+          endDate: entry?.end_date ?? null,
+          educationData: entry?.education_data ?? null,
+        });
+      } else if (blockId) {
+        id = await saveBulletToLibrary(bulletId, blockId);
       }
-      id = await createLibraryBlockAndSaveBullet(bulletId, {
-        name: newBlockName,
-        defaultSectionTitle: section?.title ?? newBlockName,
-        layoutKind,
-        title: entry?.title ?? null,
-        organization: entry?.organization ?? null,
-        location: entry?.location ?? null,
-        startDate: entry?.start_date ?? null,
-        endDate: entry?.end_date ?? null,
-        educationData: entry?.education_data ?? null,
-      });
-    } else if (blockId) {
-      id = await saveBulletToLibrary(bulletId, blockId);
+      if (id) onOpenChange(false);
+      else setError("Couldn't save to the library. Try again.");
+    } catch {
+      // createLibraryBlock validates/writes outside the perform() queue, so
+      // it can throw (bad input, network, RLS) instead of resolving to null
+      // — catch it here too, or the dialog is stuck on "Saving…" forever.
+      setError("Couldn't save to the library. Try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
-    if (id) onOpenChange(false);
-    else setError("Couldn't save to the library. Try again.");
   };
 
   const canSave = mode === "new" ? newBlockName.trim().length > 0 : Boolean(blockId);

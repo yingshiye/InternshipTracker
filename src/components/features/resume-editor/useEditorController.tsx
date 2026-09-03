@@ -12,7 +12,7 @@ import * as versionsApi from "@/lib/resume/versions";
 import { describeRpcError } from "@/lib/resume/rpc";
 import { normalizeStyleSettings } from "@/lib/resume/style";
 import { loadResumeDraft } from "@/lib/resume/draft";
-import { createLibraryBlock, type LibraryBlockInput } from "@/lib/resume/library";
+import { createLibraryBlock, deleteLibraryBlock, type LibraryBlockInput } from "@/lib/resume/library";
 import type { VersionType } from "@/lib/resume/types";
 import type { EditorDraft, SaveStatus, LibraryData, TabMessage, UndoThunk } from "./editor-types";
 import type { ResumeEntry, ResumeEntryBullet } from "@/lib/resume/types";
@@ -790,7 +790,14 @@ export function EditorProvider({
   const createLibraryBlockAndSaveBullet = useCallback(
     async (bulletId: string, input: LibraryBlockInput): Promise<string | null> => {
       const block = await createLibraryBlock(supabase, userId, input);
-      return saveBulletToLibrary(bulletId, block.id);
+      const libraryBulletId = await saveBulletToLibrary(bulletId, block.id);
+      if (!libraryBulletId) {
+        // saveBulletToLibrary already surfaced a user-facing error (via
+        // setLastError/perform). Roll the block back rather than leave an
+        // orphaned, bulletless block a retry would then duplicate.
+        await deleteLibraryBlock(supabase, block.id).catch(() => {});
+      }
+      return libraryBulletId;
     },
     [supabase, userId, saveBulletToLibrary],
   );

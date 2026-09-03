@@ -6,6 +6,7 @@ import { useEditor } from "./useEditorController";
 import { SortableItem } from "./dnd/SortableItem";
 import { BulletList } from "./BulletList";
 import { LibraryUpdateDialog } from "./LibraryUpdateDialog";
+import { EducationExtraLines } from "./EducationExtras";
 import { formatDateRange, toMonthInputValue, fromMonthInputValue } from "@/lib/resume/dates";
 import type { ResumeEntry, ResumeSection, EducationData, SkillsData } from "@/lib/resume/types";
 
@@ -186,20 +187,7 @@ function EducationLayout({ entry, onUpdate, dateFormat }: { entry: ResumeEntry; 
         <input value={entry.location ?? ""} onChange={(e) => onUpdate({ location: e.target.value })} placeholder="Location" aria-label="Location" style={{ ...inputStyle, fontStyle: "italic", textAlign: "right", width: "18ch" }} />
       </div>
 
-      {/* minor/gpa/honors/coursework/details have no editor UI any more (this
-          layout only writes `degree` now), but existing resumes/library blocks
-          may still carry this data and PrintDocument still renders it — show
-          it here read-only too so the editor is never missing what the PDF
-          includes. */}
-      {(edu.minor || edu.gpa || (edu.honors && edu.honors.length > 0) || (edu.coursework && edu.coursework.length > 0) || (edu.details && edu.details.length > 0)) && (
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {edu.minor && <span>Minor: {edu.minor}</span>}
-          {edu.gpa && <span>GPA: {edu.gpa}</span>}
-          {edu.honors && edu.honors.length > 0 && <span>Honors: {edu.honors.join(", ")}</span>}
-          {edu.coursework && edu.coursework.length > 0 && <span>Relevant coursework: {edu.coursework.join(", ")}</span>}
-          {edu.details?.map((d, i) => <span key={i}>{d}</span>)}
-        </div>
-      )}
+      <EducationExtraLines edu={edu} />
     </div>
   );
 }
