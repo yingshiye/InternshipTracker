@@ -170,15 +170,36 @@ function EducationLayout({ entry, onUpdate, dateFormat }: { entry: ResumeEntry; 
         <DateRangeEditor entry={entry} onUpdate={onUpdate} dateFormat={dateFormat} />
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <input
-          value={edu.degree ?? ""}
-          onChange={(e) => setEdu({ degree: e.target.value })}
-          placeholder="Degree (e.g. B.S. in Computer Science)"
-          aria-label="Degree"
-          style={{ ...inputStyle, fontStyle: "italic", flex: 1 }}
-        />
+        <span style={{ display: "flex", flex: 1, alignItems: "baseline", fontStyle: "italic" }}>
+          <input
+            value={edu.degree ?? ""}
+            onChange={(e) => setEdu({ degree: e.target.value })}
+            placeholder="Degree (e.g. B.S. in Computer Science)"
+            aria-label="Degree"
+            style={{ ...inputStyle, flex: edu.field_of_study ? "0 0 auto" : 1, minWidth: "12ch" }}
+          />
+          {/* field_of_study has no editor input any more (see EducationData
+              comment below) — shown read-only so the on-screen entry matches
+              what PrintDocument actually renders, instead of silently hiding it. */}
+          {edu.field_of_study && <span>{edu.degree ? ", " : ""}{edu.field_of_study}</span>}
+        </span>
         <input value={entry.location ?? ""} onChange={(e) => onUpdate({ location: e.target.value })} placeholder="Location" aria-label="Location" style={{ ...inputStyle, fontStyle: "italic", textAlign: "right", width: "18ch" }} />
       </div>
+
+      {/* minor/gpa/honors/coursework/details have no editor UI any more (this
+          layout only writes `degree` now), but existing resumes/library blocks
+          may still carry this data and PrintDocument still renders it — show
+          it here read-only too so the editor is never missing what the PDF
+          includes. */}
+      {(edu.minor || edu.gpa || (edu.honors && edu.honors.length > 0) || (edu.coursework && edu.coursework.length > 0) || (edu.details && edu.details.length > 0)) && (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {edu.minor && <span>Minor: {edu.minor}</span>}
+          {edu.gpa && <span>GPA: {edu.gpa}</span>}
+          {edu.honors && edu.honors.length > 0 && <span>Honors: {edu.honors.join(", ")}</span>}
+          {edu.coursework && edu.coursework.length > 0 && <span>Relevant coursework: {edu.coursework.join(", ")}</span>}
+          {edu.details?.map((d, i) => <span key={i}>{d}</span>)}
+        </div>
+      )}
     </div>
   );
 }
