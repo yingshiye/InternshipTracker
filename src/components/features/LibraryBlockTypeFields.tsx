@@ -19,7 +19,6 @@ export type LibraryBlockDetails = {
   endDate: string;
   isPresent: boolean;
   degree: string;
-  fieldOfStudy: string;
   minor: string;
   gpa: string;
   skillCategories: SkillCategoryForm[];
@@ -160,16 +159,9 @@ export function LibraryBlockTypeFields({ idPrefix, layoutKind, details, setDetai
           <TextField
             id={`${idPrefix}-degree`}
             label="Degree"
-            placeholder="Bachelor of Science"
+            placeholder="Bachelor of Science in Computer Science"
             value={details.degree}
             onChange={(value) => setDetail("degree", value)}
-          />
-          <TextField
-            id={`${idPrefix}-field-of-study`}
-            label="Field of study"
-            placeholder="Computer Science and Engineering"
-            value={details.fieldOfStudy}
-            onChange={(value) => setDetail("fieldOfStudy", value)}
           />
           <div className="grid grid-cols-2 gap-3">
             <TextField

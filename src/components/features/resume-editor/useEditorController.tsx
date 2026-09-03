@@ -12,6 +12,7 @@ import * as versionsApi from "@/lib/resume/versions";
 import { describeRpcError } from "@/lib/resume/rpc";
 import { normalizeStyleSettings } from "@/lib/resume/style";
 import { loadResumeDraft } from "@/lib/resume/draft";
+import { createLibraryBlock, type LibraryBlockInput } from "@/lib/resume/library";
 import type { VersionType } from "@/lib/resume/types";
 import type { EditorDraft, SaveStatus, LibraryData, TabMessage, UndoThunk } from "./editor-types";
 import type { ResumeEntry, ResumeEntryBullet } from "@/lib/resume/types";
@@ -52,6 +53,7 @@ export type EditorController = {
   removeBullet: (bulletId: string) => Promise<void>;
   reorderBullets: (entryId: string, orderedIds: string[]) => Promise<void>;
   saveBulletToLibrary: (bulletId: string, blockId: string) => Promise<string | null>;
+  createLibraryBlockAndSaveBullet: (bulletId: string, input: LibraryBlockInput) => Promise<string | null>;
   applyLibraryUpdate: (entryId: string, sel: entriesApi.ApplyLibraryUpdateSelection) => Promise<boolean>;
   // resume metadata + style
   updateMetadata: (input: { name: string; targetCompany: string | null; targetRole: string | null }) => Promise<boolean>;
@@ -114,11 +116,13 @@ export function EditorProvider({
   initialDraft,
   library,
   tabId,
+  userId,
   children,
 }: {
   initialDraft: EditorDraft;
   library: LibraryData;
   tabId: string;
+  userId: string;
   children: React.ReactNode;
 }) {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
@@ -783,6 +787,14 @@ export function EditorProvider({
     [perform, resumeId, supabase, patchBulletLocal, router],
   );
 
+  const createLibraryBlockAndSaveBullet = useCallback(
+    async (bulletId: string, input: LibraryBlockInput): Promise<string | null> => {
+      const block = await createLibraryBlock(supabase, userId, input);
+      return saveBulletToLibrary(bulletId, block.id);
+    },
+    [supabase, userId, saveBulletToLibrary],
+  );
+
   const applyLibraryUpdate = useCallback(
     async (entryId: string, sel: entriesApi.ApplyLibraryUpdateSelection): Promise<boolean> => {
       const data = await perform({
@@ -1003,7 +1015,7 @@ export function EditorProvider({
     updateHeader, addSection, renameSection, deleteSection, reorderSections,
     copyBlock, addCustomEntry, updateEntry, removeEntry, moveEntryToPosition,
     addCustomBullet, addBulletFromLibrary, updateBullet, removeBullet, reorderBullets,
-    saveBulletToLibrary, applyLibraryUpdate,
+    saveBulletToLibrary, createLibraryBlockAndSaveBullet, applyLibraryUpdate,
     updateMetadata, setStyle, setTargetLength, undo, redo, reconcile, retryLast, lastError,
     hasUnsavedChanges, flushPendingSaves, currentRevision, createVersion, restoreFromVersion,
   };

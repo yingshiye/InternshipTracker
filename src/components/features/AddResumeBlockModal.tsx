@@ -43,7 +43,6 @@ const EMPTY_FORM = {
   endDate: "",
   isPresent: false,
   degree: "",
-  fieldOfStudy: "",
   minor: "",
   gpa: "",
   skillCategories: [{ label: "", items: [""] }],
@@ -98,7 +97,6 @@ export function AddResumeBlockModal({ userId }: { userId: string }) {
           form.layoutKind === "education"
             ? {
                 degree: form.degree,
-                field_of_study: form.fieldOfStudy,
                 minor: form.minor,
                 gpa: form.gpa,
               }
