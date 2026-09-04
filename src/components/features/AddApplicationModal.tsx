@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -181,11 +182,10 @@ export function AddApplicationModal() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="applied_date">Applied date</Label>
-            <Input
+            <DatePicker
               id="applied_date"
-              type="date"
               value={form.applied_date}
-              onChange={(e) => set("applied_date", e.target.value)}
+              onChange={(value) => set("applied_date", value)}
             />
           </div>
           <div className="flex flex-col gap-1.5">

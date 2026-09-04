@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ZoomIn, ZoomOut, AlertTriangle } from "lucide-react";
 import { useEditor } from "./useEditorController";
 import { useMeasurements } from "./MeasurementContext";
-import { useResumeMeasurement } from "./useResumeMeasurement";
 import { EditableHeader } from "./EditableHeader";
 import { SectionBlock } from "./SectionBlock";
 import { SortableList } from "./dnd/SortableList";
@@ -16,8 +15,7 @@ const ZOOM_STEPS = [0.6, 0.75, 0.9, 1, 1.15, 1.3];
 
 export function ResumePreview() {
   const { draft, style, reorderSections } = useEditor();
-  const { setMeasurements } = useMeasurements();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { measurements } = useMeasurements();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
 
@@ -25,20 +23,6 @@ export function ResumePreview() {
     () => [...draft.sections].sort((a, b) => a.sort_order - b.sort_order),
     [draft.sections],
   );
-
-  // Signature that changes on any structural/text change, to retrigger measurement.
-  const signal = useMemo(
-    () =>
-      JSON.stringify({
-        s: orderedSections.map((s) => s.id),
-        e: draft.entries.map((e) => `${e.id}:${e.section_id}:${(e.title ?? "").length}`),
-        b: draft.bullets.map((b) => `${b.id}:${b.content.length}`),
-      }),
-    [orderedSections, draft.entries, draft.bullets],
-  );
-
-  const measurements = useResumeMeasurement(containerRef, style, signal);
-  useEffect(() => setMeasurements(measurements), [measurements, setMeasurements]);
 
   const zoomOut = () => {
     const lower = [...ZOOM_STEPS].reverse().find((s) => s < zoom);
@@ -107,7 +91,7 @@ export function ResumePreview() {
               transformOrigin: "top left",
             }}
           >
-            <div className="relative shadow-sm ring-1 ring-gray-200 dark:ring-gray-700" style={pageStyle} ref={containerRef}>
+            <div className="relative shadow-sm ring-1 ring-gray-200 dark:ring-gray-700" style={pageStyle}>
               {boundaries.map((b) => (
                 <div
                   key={b.index}

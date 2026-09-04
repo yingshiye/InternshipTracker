@@ -7,37 +7,32 @@ type Application = Tables<"applications">;
 
 export function StatsBar({ applications }: { applications: Application[] }) {
   const total = applications.length;
-  const interviewing = applications.filter(
-    (a) => a.status === "interview"
-  ).length;
+  const assessments = applications.filter((a) => a.status === "oa").length;
+  const interviews = applications.filter((a) => a.status === "interview").length;
   const offers = applications.filter((a) => a.status === "offer").length;
-  const responding = applications.filter((a) =>
-    ["interview", "oa", "offer"].includes(a.status)
-  ).length;
-  const responseRate =
-    total === 0 ? 0 : Math.round((responding / total) * 100);
 
   const stats = [
-    { label: "Total", value: total },
-    { label: "Interviewing", value: interviewing },
+    { label: "Applications", value: total },
+    { label: "Online assessments", value: assessments },
+    { label: "Interviews", value: interviews },
     { label: "Offers", value: offers },
-    { label: "Response rate", value: `${responseRate}%` },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <section aria-label="Application overview" className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-4">
       {stats.map((stat) => (
-        <Card key={stat.label}>
-          <CardContent className="p-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {stat.label}
-            </p>
-            <p className="mt-1 text-2xl font-medium text-gray-900 dark:text-gray-100">
+        <Card
+          key={stat.label}
+          className="rounded-none border-b border-r border-border py-0 ring-0 even:border-r-0 nth-[n+3]:border-b-0 sm:border-b-0 sm:even:border-r sm:last:border-r-0"
+        >
+          <CardContent className="p-4 sm:p-5">
+            <p className="text-xs font-medium text-muted-foreground sm:text-sm">{stat.label}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
               {stat.value}
             </p>
           </CardContent>
         </Card>
       ))}
-    </div>
+    </section>
   );
 }

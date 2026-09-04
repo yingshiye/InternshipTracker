@@ -32,7 +32,14 @@ export function BulletList({ entryId, hasSourceBlock, addLabel = "Add bullet" }:
       <ul style={{ listStyle: "disc", paddingLeft: "1.2em", margin: 0 }}>
         <SortableList id={`bullets:${entryId}`} ids={ids} onReorder={(next) => void reorderBullets(entryId, next)}>
           {bullets.map((bullet, i) => (
-            <BulletRow key={bullet.id} bullet={bullet} index={i} total={bullets.length} entryId={entryId} />
+            <BulletRow
+              key={bullet.id}
+              bullet={bullet}
+              index={i}
+              total={bullets.length}
+              entryId={entryId}
+              entryLabel={entry?.title || entry?.organization || "Untitled entry"}
+            />
           ))}
         </SortableList>
       </ul>
@@ -70,7 +77,19 @@ export function BulletList({ entryId, hasSourceBlock, addLabel = "Add bullet" }:
   );
 }
 
-function BulletRow({ bullet, index, total, entryId }: { bullet: ResumeEntryBullet; index: number; total: number; entryId: string }) {
+function BulletRow({
+  bullet,
+  index,
+  total,
+  entryId,
+  entryLabel,
+}: {
+  bullet: ResumeEntryBullet;
+  index: number;
+  total: number;
+  entryId: string;
+  entryLabel: string;
+}) {
   const { updateBullet, removeBullet, reorderBullets, draft } = useEditor();
   const [saveOpen, setSaveOpen] = useState(false);
 
@@ -93,7 +112,7 @@ function BulletRow({ bullet, index, total, entryId }: { bullet: ResumeEntryBulle
               // Enter saves/creates a new bullet — never a paragraph break inside one bullet.
               if (e.key === "Enter") e.preventDefault();
             }}
-            aria-label="Bullet text"
+            aria-label={`${entryLabel} — bullet ${index + 1}`}
             rows={1}
             className="flex-1 resize-none overflow-hidden"
             style={{ border: "none", outline: "none", background: "transparent", fontFamily: "inherit", fontSize: "inherit", lineHeight: "inherit" }}

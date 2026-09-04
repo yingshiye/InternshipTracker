@@ -33,46 +33,59 @@ export function ApplicationList({
       : applications.filter((a) => a.status === filter);
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Filter pills */}
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
-            className={`rounded-full px-3 py-1 text-sm transition-colors ${
-              filter === f.value
-                ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+    <section className="overflow-hidden rounded-lg border border-border bg-card" aria-labelledby="applications-table-title">
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 id="applications-table-title" className="text-sm font-semibold text-foreground">Applications</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {filtered.length} {filtered.length === 1 ? "application" : "applications"}
+          </p>
+        </div>
+        <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0" role="group" aria-label="Filter applications by status">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              aria-pressed={filter === f.value}
+              className={`whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                filter === f.value
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
-
-      {/* Column headers */}
-      <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] gap-4 border-b border-gray-100 pb-2 text-xs text-gray-400 dark:border-gray-800">
-        <span>Company / Role</span>
-        <span>Status</span>
-        <span>Applied</span>
-        <span>Updated</span>
-        <span>Next interview</span>
-        <span>Actions</span>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] border-collapse text-left">
+          <thead>
+            <tr className="border-b border-border bg-muted/35 text-[11px] uppercase tracking-wide text-muted-foreground">
+              <th className="px-4 py-2.5 font-medium">Company / Role</th>
+              <th className="px-3 py-2.5 font-medium">Status</th>
+              <th className="px-3 py-2.5 font-medium">Applied</th>
+              <th className="px-3 py-2.5 font-medium">Next step</th>
+              <th className="w-[132px] px-4 py-2.5 text-right font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                  {applications.length === 0
+                    ? 'No applications yet — click "Add application" to get started.'
+                    : "No applications match this filter."}
+                </td>
+              </tr>
+            ) : (
+              filtered.map((app) => (
+                <ApplicationRow key={app.id} application={app} events={events} />
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-
-      {/* Rows */}
-      {filtered.length === 0 ? (
-        <p className="py-10 text-center text-sm text-gray-400">
-          {applications.length === 0
-            ? 'No applications yet — click "Add application" to get started.'
-            : "No applications match this filter."}
-        </p>
-      ) : (
-        filtered.map((app) => (
-          <ApplicationRow key={app.id} application={app} events={events} />
-        ))
-      )}
-    </div>
+    </section>
   );
 }

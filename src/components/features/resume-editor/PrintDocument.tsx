@@ -58,8 +58,20 @@ export function PrintDocument({ snapshot }: { snapshot: ParsedSnapshot }) {
 
   if (!container) return null;
 
-  return createPortal(
+  return createPortal(<ResumeDocumentContent snapshot={snapshot} />, container);
+}
+
+/**
+ * The single static resume renderer shared by export, page measurement and
+ * version history. Keeping these surfaces on one DOM structure prevents the
+ * editor simulation from disagreeing with the PDF.
+ */
+export function ResumeDocumentContent({ snapshot }: { snapshot: ParsedSnapshot }) {
+  const style = snapshot.resume.style_settings;
+
+  return (
     <div
+      data-measure="content"
       className="resume-print-document"
       style={{
         fontFamily: '"Times New Roman", Times, serif',
@@ -126,8 +138,7 @@ export function PrintDocument({ snapshot }: { snapshot: ParsedSnapshot }) {
           </section>
         ))}
       </div>
-    </div>,
-    container,
+    </div>
   );
 }
 
@@ -202,7 +213,7 @@ function PrintEntry({
       {entry.bullets.length > 0 && (
         <ul>
           {entry.bullets.map((b, i) => (
-            <li key={i} style={{ marginBottom: bulletGapPx }}>
+            <li key={i} className="resume-print-bullet" style={{ marginBottom: bulletGapPx }}>
               {b.content}
             </li>
           ))}

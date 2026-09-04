@@ -7,7 +7,8 @@ import { SortableItem } from "./dnd/SortableItem";
 import { BulletList } from "./BulletList";
 import { LibraryUpdateDialog } from "./LibraryUpdateDialog";
 import { EducationExtraLines } from "./EducationExtras";
-import { formatDateRange, toMonthInputValue, fromMonthInputValue } from "@/lib/resume/dates";
+import { MonthPicker } from "@/components/ui/date-picker";
+import { formatDateRange, formatMonth } from "@/lib/resume/dates";
 import type { ResumeEntry, ResumeSection, EducationData, SkillsData } from "@/lib/resume/types";
 
 const inputStyle: React.CSSProperties = {
@@ -60,7 +61,7 @@ export function EntryCard({
   return (
     <SortableItem id={entry.id} handleLabel="Reorder entry">
       <div data-entry-id={entry.id} className="group relative">
-        <div className="absolute -right-1 -top-1 z-10 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 print:hidden">
+        <div className="absolute -right-1 -top-7 z-20 flex items-center gap-0.5 rounded-md bg-white/95 p-0.5 opacity-0 shadow-sm ring-1 ring-gray-200 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 print:hidden dark:bg-gray-900/95 dark:ring-gray-700">
           {hasLibraryLink && (
             <EntryIconBtn label="View library changes" onClick={() => setUpdateOpen(true)}>
               <RefreshCw className="h-3.5 w-3.5" />
@@ -121,27 +122,29 @@ type UpdateFn = (patch: Partial<Pick<ResumeEntry, "title" | "subtitle" | "organi
 
 function DateRangeEditor({ entry, onUpdate, dateFormat }: { entry: ResumeEntry; onUpdate: UpdateFn; dateFormat: import("@/lib/resume/types").StyleSettings["date_format"] }) {
   const preview = formatDateRange(entry.start_date, entry.end_date, dateFormat);
+  const entryLabel = entry.title || entry.organization || "Untitled entry";
   return (
-    <span className="inline-flex items-center gap-1 text-right" style={{ fontStyle: "italic" }}>
-      <input
-        type="month"
-        aria-label="Start month"
-        value={toMonthInputValue(entry.start_date)}
-        onChange={(e) => onUpdate({ start_date: fromMonthInputValue(e.target.value) })}
-        className="w-[13ch] text-xs print:hidden"
-        style={inputStyle}
+    <span className="inline-flex items-center gap-1 whitespace-nowrap text-right" style={{ fontStyle: "italic" }}>
+      <MonthPicker
+        aria-label={`${entryLabel} start month`}
+        value={entry.start_date}
+        displayValue={formatMonth(entry.start_date, dateFormat)}
+        placeholder="Start"
+        onChange={(value) => onUpdate({ start_date: value || null })}
+        className="max-w-[13ch] text-xs print:hidden"
+        inline
       />
       <span className="print:hidden">–</span>
-      <input
-        type="month"
-        aria-label="End month (blank for Present)"
-        value={toMonthInputValue(entry.end_date)}
-        onChange={(e) => onUpdate({ end_date: fromMonthInputValue(e.target.value) })}
-        className="w-[13ch] text-xs print:hidden"
-        style={inputStyle}
+      <MonthPicker
+        aria-label={`${entryLabel} end month (blank for Present)`}
+        value={entry.end_date}
+        displayValue={entry.end_date ? formatMonth(entry.end_date, dateFormat) : entry.start_date ? "Present" : ""}
+        placeholder="End"
+        onChange={(value) => onUpdate({ end_date: value || null })}
+        className="max-w-[13ch] text-xs print:hidden"
+        inline
       />
       <span className="hidden print:inline">{preview}</span>
-      {preview && <span className="ml-1 text-gray-400 print:hidden">({preview})</span>}
     </span>
   );
 }
@@ -204,6 +207,10 @@ function EducationLayout({ entry, onUpdate, dateFormat }: { entry: ResumeEntry; 
 function SkillsLayout({ entry, onUpdate }: { entry: ResumeEntry; onUpdate: UpdateFn }) {
   const skills = (entry.skills_data ?? { categories: [] }) as SkillsData;
   const categories = skills.categories ?? [];
+  const labelWidth = Math.min(
+    26,
+    Math.max(10, ...categories.map((category) => category.label.length + 1)),
+  );
   const setCategories = (next: SkillsData["categories"]) => onUpdate({ skills_data: { categories: next } });
 
   const patchCategory = (i: number, patch: Partial<SkillsData["categories"][number]>) =>
@@ -220,28 +227,34 @@ function SkillsLayout({ entry, onUpdate }: { entry: ResumeEntry; onUpdate: Updat
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {categories.map((cat, i) => (
-        <div key={i} className="group/cat">
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <input
-              value={cat.label}
-              onChange={(e) => patchCategory(i, { label: e.target.value })}
-              placeholder="Category"
-              aria-label={`Skill category ${i + 1} name`}
-              style={{ ...inputStyle, fontWeight: 700, width: "18ch" }}
-            />
-            <span style={{ fontWeight: 700 }}>:</span>
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "2px 6px", flex: 1 }}>
+        <div
+          key={i}
+          className="group/cat relative grid items-start gap-x-1.5"
+          style={{ gridTemplateColumns: `${labelWidth}ch auto minmax(0, 1fr)` }}
+        >
+          <input
+            value={cat.label}
+            onChange={(e) => patchCategory(i, { label: e.target.value })}
+            placeholder="Category"
+            aria-label={`Skill category ${i + 1} name`}
+            style={{ ...inputStyle, fontWeight: 700, width: "100%" }}
+          />
+          <span style={{ fontWeight: 700 }}>:</span>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
               {cat.items.map((item, k) => (
-                <span key={k} className="group/item inline-flex items-center gap-0.5">
+                <span key={k} className="group/item relative inline-flex shrink-0 items-center">
                   <input
                     value={item}
+                    size={Math.max(3, item.length)}
                     onChange={(e) =>
                       patchCategory(i, { items: cat.items.map((s, m) => (m === k ? e.target.value : s)) })
                     }
                     aria-label={`${cat.label || `Category ${i + 1}`} skill ${k + 1}`}
-                    style={{ ...inputStyle, width: `${Math.max(4, item.length + 1)}ch` }}
+                    className="min-w-[3ch] max-w-full [field-sizing:content]"
+                    style={inputStyle}
                   />
-                  <span className="inline-flex opacity-0 transition-opacity group-hover/item:opacity-100 print:hidden">
+                  {k < cat.items.length - 1 && <span aria-hidden="true">,</span>}
+                  <span className="absolute left-0 top-full z-20 hidden items-center rounded bg-white p-0.5 shadow-sm ring-1 ring-gray-200 group-hover/item:inline-flex group-focus-within/item:inline-flex print:hidden dark:bg-gray-900 dark:ring-gray-700">
                     <MicroBtn
                       label={`Move skill ${k + 1} left`}
                       disabled={k === 0}
@@ -269,18 +282,17 @@ function SkillsLayout({ entry, onUpdate }: { entry: ResumeEntry; onUpdate: Updat
                       <Trash2 className="h-2.5 w-2.5" />
                     </MicroBtn>
                   </span>
-                  {k < cat.items.length - 1 && <span>,</span>}
                 </span>
               ))}
               <button
                 type="button"
                 onClick={() => patchCategory(i, { items: [...cat.items, "New skill"] })}
-                className="rounded text-xs text-gray-400 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-1 print:hidden"
+                className="rounded text-xs text-gray-400 opacity-0 transition-opacity hover:text-gray-600 focus:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 group-hover/cat:opacity-100 group-focus-within/cat:opacity-100 print:hidden"
               >
                 + skill
               </button>
-            </div>
-            <span className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/cat:opacity-100 print:hidden">
+          </div>
+          <span className="absolute -right-1 top-0 z-10 hidden items-center gap-0.5 rounded bg-white p-0.5 shadow-sm ring-1 ring-gray-200 group-hover/cat:flex group-focus-within/cat:flex print:hidden dark:bg-gray-900 dark:ring-gray-700">
               <MicroBtn
                 label={`Move category ${i + 1} up`}
                 disabled={i === 0}
@@ -307,8 +319,7 @@ function SkillsLayout({ entry, onUpdate }: { entry: ResumeEntry; onUpdate: Updat
               >
                 <Trash2 className="h-3 w-3" />
               </MicroBtn>
-            </span>
-          </div>
+          </span>
         </div>
       ))}
       <button

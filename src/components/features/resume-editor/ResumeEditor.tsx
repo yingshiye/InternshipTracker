@@ -9,6 +9,7 @@ import { ModuleLibraryPanel } from "./ModuleLibraryPanel";
 import { ResumePreview } from "./ResumePreview";
 import { SettingsPanel } from "./SettingsPanel";
 import { ResumeCheckPanel } from "./ResumeCheckPanel";
+import { ResumeMeasurementDocument } from "./ResumeMeasurementDocument";
 import { SubmitForApplicationPanel, type SubmitTargetApplication } from "./SubmitForApplicationPanel";
 import type { EditorDraft, LibraryData } from "./editor-types";
 import "@/app/resume-print.css";
@@ -45,6 +46,7 @@ export function ResumeEditor({
   return (
     <EditorProvider initialDraft={initialDraft} library={library} tabId={tabId} userId={userId}>
       <MeasurementProvider>
+        <ResumeMeasurementDocument />
         <div className="flex h-screen flex-col">
           <EditorTopBar userId={userId} />
           {application && <SubmitForApplicationPanel application={application} />}

@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { LayoutKind } from "@/lib/resume/types";
 
 export type SkillCategoryForm = {
@@ -193,20 +194,18 @@ export function LibraryBlockTypeFields({ idPrefix, layoutKind, details, setDetai
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={`${idPrefix}-start-date`}>Start date</Label>
-          <Input
+          <DatePicker
             id={`${idPrefix}-start-date`}
-            type="date"
             value={details.startDate}
-            onChange={(event) => setDetail("startDate", event.target.value)}
+            onChange={(value) => setDetail("startDate", value)}
           />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={`${idPrefix}-end-date`}>End date</Label>
-          <Input
+          <DatePicker
             id={`${idPrefix}-end-date`}
-            type="date"
             value={details.endDate}
-            onChange={(event) => setDetail("endDate", event.target.value)}
+            onChange={(value) => setDetail("endDate", value)}
             disabled={details.isPresent}
           />
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">

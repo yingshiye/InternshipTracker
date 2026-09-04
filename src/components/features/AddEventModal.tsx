@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateTimePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -70,6 +71,12 @@ export function AddEventModal({
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    if (!form.event_date) {
+      setError("Choose a date and time.");
+      setLoading(false);
+      return;
+    }
 
     const supabase = getSupabaseBrowserClient();
     const {
@@ -139,12 +146,10 @@ export function AddEventModal({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="event-date">Date &amp; time</Label>
-            <Input
+            <DateTimePicker
               id="event-date"
-              type="datetime-local"
               value={form.event_date}
-              onChange={(e) => set("event_date", e.target.value)}
-              required
+              onChange={(value) => set("event_date", value)}
             />
           </div>
           <div className="flex flex-col gap-1.5">

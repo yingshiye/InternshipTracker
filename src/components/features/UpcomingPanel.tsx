@@ -26,13 +26,13 @@ export function UpcomingPanel({ events }: { events: Event[] }) {
             <div key={event.id} className="flex items-center gap-3">
               <span
                 className={`h-2 w-2 shrink-0 rounded-full ${
-                  isOfferRelated ? "bg-green-500" : "bg-amber-400"
+                  isOfferRelated ? "bg-chart-5" : "bg-chart-4"
                 }`}
               />
-              <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">
+              <span className="flex-1 text-sm text-foreground">
                 {event.title}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground">
                 {formatEventDate(event.event_date)}
               </span>
             </div>

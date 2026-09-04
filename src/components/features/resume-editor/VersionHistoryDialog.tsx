@@ -270,8 +270,8 @@ export function VersionHistoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="max-h-[90vh] min-w-0 overflow-hidden p-0 sm:max-w-[min(96vw,70rem)]">
+        <DialogHeader className="border-b px-5 py-4 pr-12">
           <DialogTitle>Version history</DialogTitle>
           <DialogDescription>
             Immutable snapshots of this resume. View one, compare it against the current draft or another version, or
@@ -279,21 +279,22 @@ export function VersionHistoryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {snapshotError && (
-          <p role="alert" className="text-sm text-red-600">
-            {snapshotError}
-          </p>
-        )}
-        {restoreMessage && (
-          <p role="status" aria-live="polite" className="rounded-md bg-gray-100 px-3 py-2 text-sm dark:bg-gray-800">
-            {restoreMessage}
-          </p>
-        )}
+        <div className="min-w-0 overflow-y-auto px-5 pb-5">
+          {snapshotError && (
+            <p role="alert" className="mt-4 text-sm text-red-600">
+              {snapshotError}
+            </p>
+          )}
+          {restoreMessage && (
+            <p role="status" aria-live="polite" className="mt-4 rounded-md bg-muted px-3 py-2 text-sm">
+              {restoreMessage}
+            </p>
+          )}
 
-        <div className="pt-1">{body()}</div>
+          <div className="pt-4">{body()}</div>
 
-        {restoreTarget && (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950">
+          {restoreTarget && (
+            <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950">
             <p className="font-medium text-amber-900 dark:text-amber-200">
               Restore the draft from version {restoreTarget.version_number}?
             </p>
@@ -310,8 +311,9 @@ export function VersionHistoryDialog({
                 {busy ? "Restoring…" : "Restore"}
               </Button>
             </div>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

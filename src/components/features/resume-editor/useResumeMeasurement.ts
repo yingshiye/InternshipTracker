@@ -53,6 +53,7 @@ export function useResumeMeasurement(
   containerRef: RefObject<HTMLElement | null>,
   style: StyleSettings,
   signal: unknown,
+  bulletIds: string[] = [],
 ): CheckMeasurements {
   const [measurements, setMeasurements] = useState<CheckMeasurements>(EMPTY);
   const latest = useRef<CheckMeasurements>(EMPTY);
@@ -72,16 +73,19 @@ export function useResumeMeasurement(
       if (cancelled) return;
       const contentNode = container.querySelector<HTMLElement>('[data-measure="content"]') ?? container;
       const contentHeight = contentNode.scrollHeight;
+      // A hidden responsive pane has no layout. Keep the last real result
+      // instead of publishing a false one-page / unused-page measurement.
+      if (contentHeight <= 0 || container.getBoundingClientRect().width <= 0) return;
 
       const bulletLineCounts: Record<string, number> = {};
       const lineHeightPx = style.body_font_size_pt * (96 / 72) * LINE_HEIGHT[style.line_spacing];
-      container.querySelectorAll<HTMLElement>("[data-bullet-id]").forEach((el) => {
-        const id = el.getAttribute("data-bullet-id");
+      container.querySelectorAll<HTMLElement>(".resume-print-bullet").forEach((el, index) => {
+        const id = bulletIds[index];
         if (id) bulletLineCounts[id] = estimateLineCount(el.offsetHeight, lineHeightPx);
       });
 
       let maxBlockHeight = 0;
-      container.querySelectorAll<HTMLElement>("[data-entry-id]").forEach((el) => {
+      container.querySelectorAll<HTMLElement>(".resume-print-entry").forEach((el) => {
         maxBlockHeight = Math.max(maxBlockHeight, el.offsetHeight);
       });
 
@@ -121,7 +125,7 @@ export function useResumeMeasurement(
       if (frame !== 0) cancelAnimationFrame(frame);
       ro.disconnect();
     };
-  }, [containerRef, style.body_font_size_pt, style.line_spacing, style.margin_in, signal]);
+  }, [containerRef, style.body_font_size_pt, style.line_spacing, style.margin_in, signal, bulletIds]);
 
   return measurements;
 }
