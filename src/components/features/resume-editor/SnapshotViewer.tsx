@@ -55,7 +55,11 @@ export function SnapshotViewer({ snapshot }: { snapshot: ParsedSnapshot }) {
         </ul>
       )}
 
-      <div ref={hostRef} className="min-w-0 overflow-y-auto overflow-x-hidden rounded-md bg-muted/60 p-4">
+      <div
+        ref={hostRef}
+        data-testid="snapshot-viewer-host"
+        className="min-w-0 overflow-y-auto overflow-x-hidden rounded-md bg-muted/60 p-4"
+      >
         <div className="mx-auto origin-top-left" style={{ width: PAGE_WIDTH_PX * scale, height: pageHeight * scale }}>
           <div
             ref={pageRef}

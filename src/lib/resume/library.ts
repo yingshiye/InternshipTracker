@@ -31,6 +31,57 @@ export type LibraryBlockInput = {
   sortOrder?: number;
 };
 
+/**
+ * Shared mapping from the block-editing form's flat field set to the
+ * create/update input shape, used by the standalone add/edit modals and the
+ * in-editor "create block" flow so the three call sites can't drift apart.
+ */
+export function libraryBlockFormToInput(form: {
+  name: string;
+  defaultSectionTitle: string;
+  layoutKind: LayoutKind;
+  title: string;
+  organization: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  degree: string;
+  minor: string;
+  gpa: string;
+  skillCategories: { label: string; items: string[] }[];
+  /** Carried forward from an existing block so editing degree/minor/gpa doesn't drop them. */
+  existingEducationExtras?: { honors?: unknown; coursework?: unknown; details?: unknown };
+}): LibraryBlockInput {
+  return {
+    name: form.name,
+    defaultSectionTitle: form.defaultSectionTitle,
+    layoutKind: form.layoutKind,
+    title: form.layoutKind === "skills" ? null : form.title || null,
+    subtitle: null,
+    organization: form.layoutKind === "entry" ? form.organization || null : null,
+    location: form.layoutKind === "skills" ? null : form.location || null,
+    startDate: form.layoutKind === "skills" ? null : form.startDate || null,
+    endDate: form.layoutKind === "skills" ? null : form.endDate || null,
+    educationData:
+      form.layoutKind === "education"
+        ? {
+            ...form.existingEducationExtras,
+            degree: form.degree,
+            minor: form.minor,
+            gpa: form.gpa,
+          }
+        : null,
+    skillsData:
+      form.layoutKind === "skills"
+        ? {
+            categories: form.skillCategories
+              .filter((category) => category.label.trim() || category.items.some((item) => item.trim()))
+              .map((category) => ({ label: category.label, items: category.items })),
+          }
+        : null,
+  };
+}
+
 export async function listLibraryBlocks(
   supabase: SupabaseClient<Database>,
   filters?: { layoutKind?: LayoutKind; search?: string },

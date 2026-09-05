@@ -168,6 +168,61 @@ test("editor: save checkpoint, view the snapshot, compare, and restore", async (
   await expect(page.getByLabel("Entry title")).toHaveValue("Original title", { timeout: 15_000 });
 });
 
+/**
+ * Regression for the Version History fit/scaling fix: the read-only
+ * snapshot must never clip horizontally, at either a narrow or a wide
+ * dialog width, and must actually scale down to fit a narrow host rather
+ * than just getting clipped.
+ */
+test("editor: version history snapshot scales to fit without horizontal overflow", async ({ page }) => {
+  await login(page);
+  const name = `E2E Snapshot Fit ${Date.now()}`;
+  await createResumeAndOpen(page, name);
+
+  await page.getByRole("button", { name: "Add section" }).click();
+  const addDialog = page.getByRole("dialog", { name: "Add section" });
+  await addDialog.getByLabel("Section title").fill("Experience");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(sectionTitleInput(page)).toHaveValue("Experience");
+
+  await page.getByRole("button", { name: "Add entry" }).click();
+  await expect(page.locator("[data-entry-id]")).toHaveCount(1);
+  await page.getByLabel("Entry title").fill("Snapshot fit check");
+  await page.getByLabel("Full name").fill("Ada Lovelace");
+
+  const checkpoint = page.getByRole("button", { name: "Save checkpoint" });
+  await expect(checkpoint).toBeEnabled({ timeout: 15_000 });
+  await checkpoint.click();
+  await expect(page.getByText(/Checkpoint saved as version 1/)).toBeVisible({ timeout: 15_000 });
+
+  async function assertSnapshotFitsWithoutOverflow() {
+    await page.getByRole("button", { name: "Version history" }).click();
+    const history = page.getByRole("dialog", { name: "Version history" });
+    await expect(history).toBeVisible();
+    await history.getByRole("button", { name: "View" }).first().click();
+    await expect(history.getByText(/Read-only snapshot/)).toBeVisible();
+
+    const host = page.getByTestId("snapshot-viewer-host");
+    await expect(host).toBeVisible();
+    const { scrollWidth, clientWidth } = await host.evaluate((el) => ({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+    }));
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1); // +1 for sub-pixel rounding
+
+    await page.keyboard.press("Escape");
+    await expect(history).toBeHidden();
+  }
+
+  // Narrow viewport: the page must be scaled down to fit, not clipped.
+  await page.setViewportSize({ width: 480, height: 800 });
+  await assertSnapshotFitsWithoutOverflow();
+
+  // Desktop viewport: the dialog is bounded, so the same must hold there.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await assertSnapshotFitsWithoutOverflow();
+});
+
 test("editor: the export dialog runs preflight and blocks an unexportable resume", async ({ page }) => {
   await login(page);
   const name = `E2E Export ${Date.now()}`;
