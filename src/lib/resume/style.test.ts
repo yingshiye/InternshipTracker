@@ -39,9 +39,10 @@ test("valid user-selected values are preserved", () => {
   assert.equal(s.date_format, "YYYY");
 });
 
-test("date_format defaults to 'MM YYYY' and never allows a month-name format", () => {
+test("date_format defaults to 'MM YYYY' and accepts the English long-month format", () => {
   assert.equal(normalizeStyleSettings({}).date_format, "MM YYYY");
-  // A legacy value that isn't in the allowed set (e.g. an old MMM-based one) → default.
+  assert.equal(normalizeStyleSettings({ date_format: "MMMM YYYY" }).date_format, "MMMM YYYY");
+  // An unsupported abbreviated value still falls back to the default.
   assert.equal(normalizeStyleSettings({ date_format: "MMM YYYY" }).date_format, "MM YYYY");
   assert.equal(normalizeStyleSettings({ date_format: "garbage" }).date_format, "MM YYYY");
 });

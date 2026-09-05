@@ -49,7 +49,7 @@ export type CustomLinks = {
 
 export type LineSpacing = "compact" | "standard" | "comfortable";
 export type BlockSpacing = "tight" | "standard" | "wide";
-export type DateFormat = "MM YYYY" | "MM/YYYY" | "YYYY";
+export type DateFormat = "MMMM YYYY" | "MM YYYY" | "MM/YYYY" | "YYYY";
 
 export type BodyFontSizePt = 9.5 | 10 | 10.5 | 11 | 11.5 | 12;
 export type NameFontSizePt = 16 | 18 | 20 | 22 | 24;

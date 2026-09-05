@@ -5,6 +5,7 @@ import { Pencil, Trash2, CalendarPlus, FileCheck2, FilePlus2 } from "lucide-reac
 import { useRouter } from "next/navigation";
 import type { Tables } from "@/types/supabase";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -154,54 +155,67 @@ export function ApplicationRow({
         {/* Actions */}
         <td className="px-4 py-3">
           <div className="flex items-center justify-end gap-0.5 opacity-70 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-          <button
-            onClick={() => setEditOpen(true)}
-            title="Edit application"
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => setResumeOpen(true)}
-            title={
-              application.submitted_resume_version_id
-                ? "A submitted resume version is attached"
-                : "Attach a submitted resume version"
-            }
-            aria-label={
-              application.submitted_resume_version_id
-                ? "Change the attached resume version"
-                : "Attach a resume version"
-            }
-            className={`rounded-md p-1.5 hover:bg-accent ${
-              application.submitted_resume_version_id
-                ? "text-chart-5 hover:text-chart-5"
-                : "text-muted-foreground hover:text-accent-foreground"
-            }`}
-          >
-            {application.submitted_resume_version_id ? (
-              <FileCheck2 className="h-3.5 w-3.5" />
-            ) : (
-              <FilePlus2 className="h-3.5 w-3.5" />
-            )}
-          </button>
-          <button
-            onClick={() => setAddEventOpen(true)}
-            title="Add event"
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          >
-            <CalendarPlus className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => {
-              setDeleteError(null);
-              setDeleteOpen(true);
-            }}
-            title="Delete application"
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+            <Tooltip label="Edit application">
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                aria-label={`Edit ${application.company} application`}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
+            <Tooltip
+              label={
+                application.submitted_resume_version_id
+                  ? "Change attached resume"
+                  : "Attach submitted resume"
+              }
+            >
+              <button
+                type="button"
+                onClick={() => setResumeOpen(true)}
+                aria-label={
+                  application.submitted_resume_version_id
+                    ? `Change attached resume for ${application.company}`
+                    : `Attach submitted resume to ${application.company}`
+                }
+                className={`rounded-md p-1.5 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  application.submitted_resume_version_id
+                    ? "text-chart-5 hover:text-chart-5"
+                    : "text-muted-foreground hover:text-accent-foreground"
+                }`}
+              >
+                {application.submitted_resume_version_id ? (
+                  <FileCheck2 className="h-3.5 w-3.5" />
+                ) : (
+                  <FilePlus2 className="h-3.5 w-3.5" />
+                )}
+              </button>
+            </Tooltip>
+            <Tooltip label="Add event">
+              <button
+                type="button"
+                onClick={() => setAddEventOpen(true)}
+                aria-label={`Add event for ${application.company}`}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <CalendarPlus className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
+            <Tooltip label="Delete application permanently">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteError(null);
+                  setDeleteOpen(true);
+                }}
+                aria-label={`Delete ${application.company} application permanently`}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
           </div>
         </td>
       </tr>
@@ -209,6 +223,9 @@ export function ApplicationRow({
       {editOpen && (
         <EditApplicationModal
           application={application}
+          events={events.filter(
+            (event) => event.application_id === application.id,
+          )}
           open={editOpen}
           onOpenChange={setEditOpen}
         />

@@ -12,7 +12,7 @@ import * as versionsApi from "@/lib/resume/versions";
 import { describeRpcError } from "@/lib/resume/rpc";
 import { normalizeStyleSettings } from "@/lib/resume/style";
 import { loadResumeDraft } from "@/lib/resume/draft";
-import { createLibraryBlock, deleteLibraryBlock, type LibraryBlockInput } from "@/lib/resume/library";
+import { addLibraryBullet, createLibraryBlock, deleteLibraryBlock, type LibraryBlockInput } from "@/lib/resume/library";
 import type { VersionType } from "@/lib/resume/types";
 import type { EditorDraft, SaveStatus, LibraryData, TabMessage, UndoThunk } from "./editor-types";
 import type { ResumeEntry, ResumeEntryBullet } from "@/lib/resume/types";
@@ -36,7 +36,7 @@ export type EditorController = {
   // header
   updateHeader: (patch: Partial<HeaderFields>) => void;
   // sections
-  addSection: (title: string, layoutKind: LayoutKind) => Promise<void>;
+  addSection: (title: string, layoutKind: LayoutKind) => Promise<string | null>;
   renameSection: (sectionId: string, title: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   reorderSections: (orderedIds: string[]) => Promise<void>;
@@ -54,6 +54,7 @@ export type EditorController = {
   reorderBullets: (entryId: string, orderedIds: string[]) => Promise<void>;
   saveBulletToLibrary: (bulletId: string, blockId: string) => Promise<string | null>;
   createLibraryBlockAndSaveBullet: (bulletId: string, input: LibraryBlockInput) => Promise<string | null>;
+  saveEntryToLibrary: (entryId: string, name: string, defaultSectionTitle: string) => Promise<boolean>;
   applyLibraryUpdate: (entryId: string, sel: entriesApi.ApplyLibraryUpdateSelection) => Promise<boolean>;
   // resume metadata + style
   updateMetadata: (input: { name: string; targetCompany: string | null; targetRole: string | null }) => Promise<boolean>;
@@ -363,11 +364,13 @@ export function EditorProvider({
   // ── Sections ──────────────────────────────────────────────────────────────
   const addSection = useCallback(
     async (title: string, layoutKind: LayoutKind) => {
+      let createdId: string | null = null;
       await perform({
         call: (rev) => sectionsApi.createSection(supabase, resumeId, rev, { title, layoutKind }),
         newRevision: (d) => d[0].revision,
         onSuccess: (d, rev) => {
           const newId = d[0].section_id;
+          createdId = newId;
           setDraft((prev) => ({
             ...prev,
             sections: [...prev.sections, {
@@ -387,6 +390,7 @@ export function EditorProvider({
           });
         },
       });
+      return createdId;
     },
     [perform, resumeId, supabase],
   );
@@ -802,6 +806,44 @@ export function EditorProvider({
     [supabase, userId, saveBulletToLibrary],
   );
 
+  const saveEntryToLibrary = useCallback(
+    async (entryId: string, name: string, defaultSectionTitle: string): Promise<boolean> => {
+      const entry = draft.entries.find((item) => item.id === entryId);
+      const section = entry ? draft.sections.find((item) => item.id === entry.section_id) : undefined;
+      if (!entry || !section) return false;
+
+      let blockId: string | null = null;
+      try {
+        const block = await createLibraryBlock(supabase, userId, {
+          name,
+          defaultSectionTitle,
+          layoutKind: section.layout_kind,
+          title: entry.title,
+          subtitle: entry.subtitle,
+          organization: entry.organization,
+          location: entry.location,
+          startDate: entry.start_date,
+          endDate: entry.end_date,
+          educationData: entry.education_data,
+          skillsData: entry.skills_data,
+        });
+        blockId = block.id;
+        const bullets = draft.bullets
+          .filter((bullet) => bullet.entry_id === entryId)
+          .sort((a, b) => a.sort_order - b.sort_order);
+        for (const bullet of bullets) {
+          await addLibraryBullet(supabase, userId, block.id, bullet.content);
+        }
+        router.refresh();
+        return true;
+      } catch {
+        if (blockId) await deleteLibraryBlock(supabase, blockId).catch(() => {});
+        return false;
+      }
+    },
+    [draft.entries, draft.sections, draft.bullets, supabase, userId, router],
+  );
+
   const applyLibraryUpdate = useCallback(
     async (entryId: string, sel: entriesApi.ApplyLibraryUpdateSelection): Promise<boolean> => {
       const data = await perform({
@@ -1022,7 +1064,7 @@ export function EditorProvider({
     updateHeader, addSection, renameSection, deleteSection, reorderSections,
     copyBlock, addCustomEntry, updateEntry, removeEntry, moveEntryToPosition,
     addCustomBullet, addBulletFromLibrary, updateBullet, removeBullet, reorderBullets,
-    saveBulletToLibrary, createLibraryBlockAndSaveBullet, applyLibraryUpdate,
+    saveBulletToLibrary, createLibraryBlockAndSaveBullet, saveEntryToLibrary, applyLibraryUpdate,
     updateMetadata, setStyle, setTargetLength, undo, redo, reconcile, retryLast, lastError,
     hasUnsavedChanges, flushPendingSaves, currentRevision, createVersion, restoreFromVersion,
   };

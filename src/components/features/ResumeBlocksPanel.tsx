@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, FilePlus2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,9 @@ import {
   updateLibraryBullet,
 } from "@/lib/resume/library";
 import type { LayoutKind, LibraryBlock, LibraryBullet } from "@/lib/resume/types";
+import type { Resume, ResumeSection } from "@/lib/resume/types";
+import { createSection } from "@/lib/resume/sections";
+import { copyBlockIntoSection } from "@/lib/resume/entries";
 import { AddResumeBlockModal } from "./AddResumeBlockModal";
 import { EditResumeBlockModal } from "./EditResumeBlockModal";
 
@@ -49,10 +53,14 @@ const FILTER_OPTIONS: { value: LayoutKind | "all"; label: string }[] = [
 export function ResumeBlocksPanel({
   blocks,
   bullets,
+  resumes,
+  sections,
   userId,
 }: {
   blocks: LibraryBlock[];
   bullets: LibraryBullet[];
+  resumes: Resume[];
+  sections: ResumeSection[];
   userId: string;
 }) {
   const [layoutFilter, setLayoutFilter] = useState<LayoutKind | "all">("all");
@@ -118,7 +126,7 @@ export function ResumeBlocksPanel({
       ) : (
         <div className="flex flex-col gap-2">
           {filteredBlocks.map((block) => (
-            <LibraryBlockCard key={block.id} block={block} bullets={bulletsByBlock.get(block.id) ?? []} />
+            <LibraryBlockCard key={block.id} block={block} bullets={bulletsByBlock.get(block.id) ?? []} resumes={resumes} sections={sections} />
           ))}
         </div>
       )}
@@ -126,11 +134,12 @@ export function ResumeBlocksPanel({
   );
 }
 
-function LibraryBlockCard({ block, bullets }: { block: LibraryBlock; bullets: LibraryBullet[] }) {
+function LibraryBlockCard({ block, bullets, resumes, sections }: { block: LibraryBlock; bullets: LibraryBullet[]; resumes: Resume[]; sections: ResumeSection[] }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -167,6 +176,14 @@ function LibraryBlockCard({ block, bullets }: { block: LibraryBlock; bullets: Li
           <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
+              onClick={() => setAddOpen(true)}
+              title="Add to resume"
+              className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950"
+            >
+              <FilePlus2 className="h-3.5 w-3.5" /> Add to resume
+            </button>
+            <button
+              type="button"
               onClick={() => setExpanded((v) => !v)}
               title={expanded ? "Hide bullets" : "Show bullets"}
               className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900"
@@ -197,6 +214,7 @@ function LibraryBlockCard({ block, bullets }: { block: LibraryBlock; bullets: Li
       </Card>
 
       <EditResumeBlockModal block={block} open={editOpen} onOpenChange={setEditOpen} />
+      <AddBlockToResumeDialog block={block} bullets={bullets} resumes={resumes} sections={sections} open={addOpen} onOpenChange={setAddOpen} />
 
       <Dialog
         open={deleteOpen}
@@ -226,6 +244,88 @@ function LibraryBlockCard({ block, bullets }: { block: LibraryBlock; bullets: Li
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function AddBlockToResumeDialog({ block, bullets, resumes, sections, open, onOpenChange }: {
+  block: LibraryBlock;
+  bullets: LibraryBullet[];
+  resumes: Resume[];
+  sections: ResumeSection[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const router = useRouter();
+  const [resumeId, setResumeId] = useState(resumes[0]?.id ?? "");
+  const [sectionId, setSectionId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const resume = resumes.find((item) => item.id === resumeId);
+  const compatible = sections.filter((section) => section.resume_id === resumeId && section.layout_kind === block.layout_kind);
+
+  async function handleAdd() {
+    if (!resume) return;
+    setBusy(true);
+    setError(null);
+    const supabase = getSupabaseBrowserClient();
+    let revision = resume.revision;
+    let targetSectionId = sectionId;
+    if (!targetSectionId) {
+      const created = await createSection(supabase, resume.id, revision, {
+        title: block.default_section_title || LAYOUT_KIND_LABELS[block.layout_kind],
+        layoutKind: block.layout_kind,
+      });
+      if (!created.ok) {
+        setError(created.message);
+        setBusy(false);
+        return;
+      }
+      targetSectionId = created.data[0].section_id;
+      revision = created.data[0].revision;
+    }
+    const copied = await copyBlockIntoSection(supabase, resume.id, revision, targetSectionId, block.id, bullets.map((bullet) => bullet.id));
+    setBusy(false);
+    if (!copied.ok) {
+      setError(copied.message);
+      return;
+    }
+    onOpenChange(false);
+    router.push(`/resumes/${resume.id}`);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Add “{block.name}” to a resume</DialogTitle>
+          <DialogDescription>Choose a resume and a compatible section. If needed, a section is created automatically.</DialogDescription>
+        </DialogHeader>
+        {resumes.length === 0 ? (
+          <p className="text-sm text-gray-500">Create a resume first, then add this block.</p>
+        ) : (
+          <div className="flex flex-col gap-3 pt-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Resume</span>
+              <select value={resumeId} onChange={(event) => { setResumeId(event.target.value); setSectionId(""); }} className="h-9 rounded-md border border-gray-200 bg-transparent px-2 dark:border-gray-700 dark:bg-gray-900">
+                {resumes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Section</span>
+              <select value={sectionId} onChange={(event) => setSectionId(event.target.value)} className="h-9 rounded-md border border-gray-200 bg-transparent px-2 dark:border-gray-700 dark:bg-gray-900">
+                <option value="">Create “{block.default_section_title || LAYOUT_KIND_LABELS[block.layout_kind]}”</option>
+                {compatible.map((section) => <option key={section.id} value={section.id}>{section.title}</option>)}
+              </select>
+            </label>
+            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={() => void handleAdd()} disabled={busy}>{busy ? "Adding…" : "Add and open resume"}</Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -20,6 +20,17 @@ export default async function ResumeBlocksPage() {
     .select("*")
     .order("sort_order", { ascending: true });
 
+  const { data: resumes } = await supabase
+    .from("resumes")
+    .select("*")
+    .is("archived_at", null)
+    .order("updated_at", { ascending: false });
+
+  const { data: sections } = await supabase
+    .from("resume_sections")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <div>
@@ -30,7 +41,7 @@ export default async function ResumeBlocksPage() {
           Your reusable library of experience, education, and skills blocks.
         </p>
       </div>
-      <ResumeBlocksPanel blocks={blocks ?? []} bullets={bullets ?? []} userId={user.id} />
+      <ResumeBlocksPanel blocks={blocks ?? []} bullets={bullets ?? []} resumes={resumes ?? []} sections={sections ?? []} userId={user.id} />
     </div>
   );
 }

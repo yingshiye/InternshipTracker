@@ -23,7 +23,7 @@ export const HEADING_FONT_SIZES: readonly HeadingFontSizePt[] = [10, 11, 12, 13,
 export const MARGINS: readonly MarginIn[] = [0.4, 0.5, 0.6, 0.7, 0.75, 1];
 export const LINE_SPACINGS: readonly LineSpacing[] = ["compact", "standard", "comfortable"];
 export const BLOCK_SPACINGS: readonly BlockSpacing[] = ["tight", "standard", "wide"];
-export const DATE_FORMATS: readonly DateFormat[] = ["MM YYYY", "MM/YYYY", "YYYY"];
+export const DATE_FORMATS: readonly DateFormat[] = ["MMMM YYYY", "MM YYYY", "MM/YYYY", "YYYY"];
 
 export const DEFAULT_STYLE_SETTINGS: StyleSettings = {
   body_font_size_pt: 11,

@@ -9,8 +9,7 @@ import type { DateFormat } from "@/types/supabase";
  * string components directly — never `new Date(str)` — so a date-only value
  * can never shift a month due to local-timezone conversion.
  *
- * No English month names or abbreviations are ever produced. Month numbers
- * are always zero-padded.
+ * Numeric formats are zero-padded; the long format uses English month names.
  */
 
 export type YearMonth = { year: number; month: number }; // month is 1-12
@@ -62,6 +61,8 @@ export function formatMonth(value: string | null | undefined, format: DateFormat
   const mm = String(ym.month).padStart(2, "0");
   const yyyy = String(ym.year).padStart(4, "0");
   switch (format) {
+    case "MMMM YYYY":
+      return `${ENGLISH_MONTHS[ym.month - 1]} ${yyyy}`;
     case "MM YYYY":
       return `${mm} ${yyyy}`;
     case "MM/YYYY":
@@ -70,6 +71,11 @@ export function formatMonth(value: string | null | undefined, format: DateFormat
       return yyyy;
   }
 }
+
+const ENGLISH_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+] as const;
 
 /**
  * Format a start–end date range. A null/empty end date renders as "Present"
@@ -82,9 +88,10 @@ export function formatDateRange(
 ): string {
   const startStr = formatMonth(start, format);
   const hasStart = startStr !== "";
+  if (!hasStart) return "";
   const endStr = formatMonth(end, format);
   const endLabel = end ? endStr : hasStart ? "Present" : "";
   if (hasStart && endLabel) return `${startStr} – ${endLabel}`;
   if (hasStart) return startStr;
-  return endLabel;
+  return "";
 }

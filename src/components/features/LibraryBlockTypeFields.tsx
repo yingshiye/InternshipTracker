@@ -164,22 +164,6 @@ export function LibraryBlockTypeFields({ idPrefix, layoutKind, details, setDetai
             value={details.degree}
             onChange={(value) => setDetail("degree", value)}
           />
-          <div className="grid grid-cols-2 gap-3">
-            <TextField
-              id={`${idPrefix}-minor`}
-              label="Minor"
-              placeholder="Optional"
-              value={details.minor}
-              onChange={(value) => setDetail("minor", value)}
-            />
-            <TextField
-              id={`${idPrefix}-gpa`}
-              label="GPA"
-              placeholder="3.8 / 4.0"
-              value={details.gpa}
-              onChange={(value) => setDetail("gpa", value)}
-            />
-          </div>
         </>
       )}
 

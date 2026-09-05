@@ -30,6 +30,25 @@
   width: 8.5in;
 }
 
+/* ResumeDocumentContent is also used by the on-screen immutable-version
+   viewer and the off-screen measurement document. Tailwind's reset removes
+   list markers globally, so these structural rules must apply outside
+   @media print as well as inside the physical print job. */
+.resume-print-document ul {
+  margin: 0;
+  padding-left: 1.2em;
+  list-style-position: outside;
+  list-style-type: disc;
+}
+
+.resume-print-document .resume-print-bullet {
+  display: list-item;
+}
+
+.resume-print-document .resume-print-bullet::marker {
+  color: #000;
+}
+
 @media print {
   html,
   body {
@@ -112,7 +131,7 @@
   .resume-print-document ul {
     margin: 0;
     padding-left: 1.2em;
-    list-style: disc;
+    list-style: outside disc;
   }
 
   /* Links keep their visible text; no printed URL is appended, because the

@@ -17,6 +17,11 @@ test("formatMonth: 2025-01-01 → '01 2025'", () => {
   assert.equal(formatMonth("2025-01-01", "MM YYYY"), "01 2025");
 });
 
+test("formatMonth: MMMM YYYY uses full English month names", () => {
+  assert.equal(formatMonth("2023-09-01", "MMMM YYYY"), "September 2023");
+  assert.equal(formatDateRange("2023-09-01", "2027-06-01", "MMMM YYYY"), "September 2023 – June 2027");
+});
+
 test("formatMonth: MM/YYYY → '06/2025'", () => {
   assert.equal(formatMonth("2025-06-01", "MM/YYYY"), "06/2025");
 });
@@ -41,6 +46,11 @@ test("formatDateRange: null end date with a start → 'Present'", () => {
 
 test("formatDateRange: start only, no end, empty string end → Present", () => {
   assert.equal(formatDateRange("2025-06-01", "", "MM YYYY"), "06 2025 – Present");
+});
+
+test("formatDateRange: no start keeps the whole range blank", () => {
+  assert.equal(formatDateRange(null, null, "MMMM YYYY"), "");
+  assert.equal(formatDateRange(null, "2027-06-01", "MMMM YYYY"), "");
 });
 
 test("no output ever contains an English month name or abbreviation", () => {

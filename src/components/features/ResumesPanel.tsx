@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, Copy, Pencil, SquarePen, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ export function ResumesPanel({
   const resumes = tab === "active" ? activeResumes : archivedResumes;
 
   return (
+    <TooltipProvider>
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex gap-1 rounded-md border border-gray-200 p-0.5 dark:border-gray-800">
@@ -72,6 +74,7 @@ export function ResumesPanel({
         </div>
       )}
     </div>
+    </TooltipProvider>
   );
 }
 
@@ -143,51 +146,61 @@ function ResumeRow({ resume }: { resume: Resume }) {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <Link
-            href={`/resumes/${resume.id}`}
-            title="Open editor"
-            className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-900 dark:hover:text-gray-200"
-          >
-            <SquarePen className="h-3.5 w-3.5" />
-          </Link>
-          <button
-            type="button"
-            onClick={() => setRenameOpen(true)}
-            title="Rename"
-            className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-900 dark:hover:text-gray-200"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleDuplicate}
-            disabled={busy}
-            title="Duplicate"
-            className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 dark:hover:bg-gray-900 dark:hover:text-gray-200"
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleArchiveToggle}
-            disabled={busy}
-            title={resume.archived_at ? "Unarchive" : "Archive"}
-            className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 dark:hover:bg-gray-900 dark:hover:text-gray-200"
-          >
-            {resume.archived_at ? (
-              <ArchiveRestore className="h-3.5 w-3.5" />
-            ) : (
-              <Archive className="h-3.5 w-3.5" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => setDeleteOpen(true)}
-            title="Delete"
-            className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip label="Open editor">
+            <Link
+              href={`/resumes/${resume.id}`}
+              aria-label={`Open ${resume.name} editor`}
+              className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-900 dark:hover:text-gray-200"
+            >
+              <SquarePen className="h-3.5 w-3.5" />
+            </Link>
+          </Tooltip>
+          <Tooltip label="Rename">
+            <button
+              type="button"
+              aria-label={`Rename ${resume.name}`}
+              onClick={() => setRenameOpen(true)}
+              className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-900 dark:hover:text-gray-200"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
+          <Tooltip label="Duplicate">
+            <button
+              type="button"
+              aria-label={`Duplicate ${resume.name}`}
+              onClick={handleDuplicate}
+              disabled={busy}
+              className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 dark:hover:bg-gray-900 dark:hover:text-gray-200"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
+          <Tooltip label={resume.archived_at ? "Unarchive" : "Archive"}>
+            <button
+              type="button"
+              aria-label={`${resume.archived_at ? "Unarchive" : "Archive"} ${resume.name}`}
+              onClick={handleArchiveToggle}
+              disabled={busy}
+              className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 dark:hover:bg-gray-900 dark:hover:text-gray-200"
+            >
+              {resume.archived_at ? (
+                <ArchiveRestore className="h-3.5 w-3.5" />
+              ) : (
+                <Archive className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </Tooltip>
+          <Tooltip label="Delete permanently">
+            <button
+              type="button"
+              aria-label={`Delete ${resume.name} permanently`}
+              onClick={() => setDeleteOpen(true)}
+              className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
         </div>
       </Card>
       {error && !deleteOpen && (

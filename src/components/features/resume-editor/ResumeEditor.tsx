@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Library, FileText, SlidersHorizontal, MonitorSmartphone } from "lucide-react";
+import { Library, FileText, SlidersHorizontal, MonitorSmartphone, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { EditorProvider } from "./useEditorController";
 import { MeasurementProvider } from "./MeasurementContext";
 import { EditorTopBar } from "./EditorTopBar";
@@ -42,6 +42,7 @@ export function ResumeEditor({
   // tabs instead of three unreadable slivers. The Letter preview keeps its
   // real width and scrolls; it is never squeezed to fit.
   const [pane, setPane] = useState<Pane>("resume");
+  const [settingsCollapsed, setSettingsCollapsed] = useState(false);
 
   return (
     <EditorProvider initialDraft={initialDraft} library={library} tabId={tabId} userId={userId}>
@@ -77,7 +78,7 @@ export function ResumeEditor({
             ))}
           </div>
 
-          <div className="grid flex-1 overflow-hidden xl:grid-cols-[260px_1fr_340px]">
+          <div className={`grid flex-1 overflow-hidden ${settingsCollapsed ? "xl:grid-cols-[260px_1fr_44px]" : "xl:grid-cols-[260px_1fr_340px]"}`}>
             <div
               role="tabpanel"
               id="editor-pane-library"
@@ -104,13 +105,22 @@ export function ResumeEditor({
                 pane === "settings" ? "flex" : "hidden"
               } xl:flex`}
             >
+              <button
+                type="button"
+                onClick={() => setSettingsCollapsed((value) => !value)}
+                className="hidden h-11 items-center justify-center border-b border-gray-100 text-gray-500 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-[-2px] xl:flex dark:border-gray-800 dark:hover:bg-gray-900"
+                aria-label={settingsCollapsed ? "Expand settings panel" : "Collapse settings panel"}
+                title={settingsCollapsed ? "Expand settings" : "Collapse settings"}
+              >
+                {settingsCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+              </button>
               <p className="flex items-start gap-2 border-b border-gray-100 px-3 py-2 text-xs text-gray-500 xl:hidden dark:border-gray-800">
                 <MonitorSmartphone className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 Reliable Letter-size PDF export needs desktop Google Chrome. Everything else — editing, version
                 history, snapshots — works here.
               </p>
-              <SettingsPanel />
-              <ResumeCheckPanel userId={userId} />
+              {!settingsCollapsed && <SettingsPanel />}
+              {!settingsCollapsed && <ResumeCheckPanel userId={userId} />}
             </aside>
           </div>
         </div>

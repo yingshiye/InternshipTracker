@@ -18,15 +18,17 @@ export default async function DashboardPage() {
     .select("*")
     .order("updated_at", { ascending: false });
 
-  const now = new Date().toISOString();
   const { data: events } = await supabase
     .from("events")
     .select("*")
-    .gte("event_date", now)
     .order("event_date", { ascending: true });
 
   const apps = applications ?? [];
-  const upcomingEvents = events ?? [];
+  const allEvents = events ?? [];
+  const now = new Date().getTime();
+  const upcomingEvents = allEvents.filter(
+    (event) => new Date(event.event_date).getTime() >= now,
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 p-4 sm:p-6 lg:p-8">
@@ -42,9 +44,13 @@ export default async function DashboardPage() {
         <AddApplicationModal />
       </div>
       <StatsBar applications={apps} />
-      <ApplicationList applications={apps} events={upcomingEvents} />
+      <ApplicationList applications={apps} events={allEvents} />
       {upcomingEvents.length > 0 && (
-        <UpcomingPanel events={upcomingEvents} />
+        <UpcomingPanel
+          events={upcomingEvents}
+          allEvents={allEvents}
+          applications={apps}
+        />
       )}
     </div>
   );

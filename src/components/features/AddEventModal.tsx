@@ -63,6 +63,7 @@ export function AddEventModal({
     if (!next) {
       setForm(EMPTY_FORM);
       setError(null);
+      setLoading(false);
     }
     onOpenChange(next);
   }
@@ -70,40 +71,43 @@ export function AddEventModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setLoading(true);
 
     if (!form.event_date) {
       setError("Choose a date and time.");
-      setLoading(false);
       return;
     }
 
-    const supabase = getSupabaseBrowserClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    setLoading(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      setError("Not authenticated.");
-      setLoading(false);
-      return;
-    }
+      if (!user) {
+        setError("Not authenticated.");
+        return;
+      }
 
-    const { error } = await supabase.from("events").insert({
-      user_id: user.id,
-      application_id: application.id,
-      title: form.title,
-      event_type: form.event_type || null,
-      event_date: new Date(form.event_date).toISOString(),
-      notes: form.notes || null,
-    });
+      const { error } = await supabase.from("events").insert({
+        user_id: user.id,
+        application_id: application.id,
+        title: form.title,
+        event_type: form.event_type || null,
+        event_date: new Date(form.event_date).toISOString(),
+        notes: form.notes || null,
+      });
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
+      if (error) {
+        setError(error.message);
+        return;
+      }
       handleOpenChange(false);
       router.refresh();
+    } catch {
+      setError("The event couldn’t be added. Try again.");
+    } finally {
+      setLoading(false);
     }
   }
 

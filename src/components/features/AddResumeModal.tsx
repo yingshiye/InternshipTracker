@@ -16,8 +16,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { createResume } from "@/lib/resume/resumes";
+import { createSection } from "@/lib/resume/sections";
+import type { LayoutKind } from "@/lib/resume/types";
 
-const EMPTY_FORM = { name: "", targetCompany: "", targetRole: "" };
+const EMPTY_FORM = { name: "", targetCompany: "", targetRole: "", template: "engineering" };
+const ENGINEERING_SECTIONS: { title: string; layoutKind: LayoutKind }[] = [
+  { title: "Education", layoutKind: "education" },
+  { title: "Experience", layoutKind: "entry" },
+  { title: "Projects", layoutKind: "entry" },
+  { title: "Skills", layoutKind: "skills" },
+];
 
 export function AddResumeModal() {
   const [open, setOpen] = useState(false);
@@ -42,15 +50,30 @@ export function AddResumeModal() {
       targetRole: form.targetRole,
     });
 
-    setLoading(false);
     if (!result.ok) {
+      setLoading(false);
       setError(result.message);
       return;
     }
 
+    const created = result.data[0];
+    if (form.template === "engineering") {
+      let revision = created.revision;
+      for (const section of ENGINEERING_SECTIONS) {
+        const sectionResult = await createSection(supabase, created.resume_id, revision, section);
+        if (!sectionResult.ok) {
+          setError(`Resume created, but the template could not be completed: ${sectionResult.message}`);
+          setLoading(false);
+          return;
+        }
+        revision = sectionResult.data[0].revision;
+      }
+    }
+
     setOpen(false);
+    setLoading(false);
     setForm(EMPTY_FORM);
-    router.refresh();
+    router.push(`/resumes/${created.resume_id}`);
   }
 
   return (
@@ -67,6 +90,19 @@ export function AddResumeModal() {
           <DialogDescription>Name your new resume and optionally set a target role and company. You can change these later.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="resume-template">Template</Label>
+            <select
+              id="resume-template"
+              value={form.template}
+              onChange={(e) => set("template", e.target.value)}
+              className="h-9 rounded-md border border-gray-200 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900"
+            >
+              <option value="engineering">Engineering Resume</option>
+              <option value="blank">Blank resume</option>
+            </select>
+            <p className="text-xs text-gray-500">Engineering Resume creates Education, Experience, Projects, and Skills.</p>
+          </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="resume-name">Name</Label>
             <Input

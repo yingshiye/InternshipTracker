@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Trash2, ChevronUp, ChevronDown, MoveRight, RefreshCw } from "lucide-react";
+import { Trash2, ChevronUp, ChevronDown, MoveRight, RefreshCw, BookmarkPlus } from "lucide-react";
 import { useEditor } from "./useEditorController";
 import { SortableItem } from "./dnd/SortableItem";
 import { BulletList } from "./BulletList";
 import { LibraryUpdateDialog } from "./LibraryUpdateDialog";
 import { EducationExtraLines } from "./EducationExtras";
+import { SaveEntryToLibraryDialog } from "./SaveEntryToLibraryDialog";
 import { MonthPicker } from "@/components/ui/date-picker";
 import { formatDateRange, formatMonth } from "@/lib/resume/dates";
 import type { ResumeEntry, ResumeSection, EducationData, SkillsData } from "@/lib/resume/types";
@@ -34,6 +35,8 @@ export function EntryCard({
 }) {
   const { draft, style, updateEntry, removeEntry, moveEntryToPosition } = useEditor();
   const [updateOpen, setUpdateOpen] = useState(false);
+  const [saveEntryOpen, setSaveEntryOpen] = useState(false);
+  const [selected, setSelected] = useState(false);
 
   const compatibleSections = useMemo(
     () => draft.sections.filter((s) => s.layout_kind === section.layout_kind && s.id !== section.id),
@@ -60,11 +63,25 @@ export function EntryCard({
 
   return (
     <SortableItem id={entry.id} handleLabel="Reorder entry">
-      <div data-entry-id={entry.id} className="group relative">
-        <div className="absolute -right-1 -top-7 z-20 flex items-center gap-0.5 rounded-md bg-white/95 p-0.5 opacity-0 shadow-sm ring-1 ring-gray-200 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 print:hidden dark:bg-gray-900/95 dark:ring-gray-700">
+      <div
+        data-entry-id={entry.id}
+        className="group relative"
+        tabIndex={0}
+        onClick={() => setSelected(true)}
+        onFocus={() => setSelected(true)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setSelected(false);
+        }}
+      >
+        <div className={`absolute left-full top-0 z-20 ml-2 flex items-center gap-0.5 rounded-md bg-white/95 p-0.5 shadow-sm ring-1 ring-gray-200 transition-opacity print:hidden dark:bg-gray-900/95 dark:ring-gray-700 ${selected ? "opacity-100" : "pointer-events-none opacity-0"}`}>
           {hasLibraryLink && (
             <EntryIconBtn label="View library changes" onClick={() => setUpdateOpen(true)}>
               <RefreshCw className="h-3.5 w-3.5" />
+            </EntryIconBtn>
+          )}
+          {!hasLibraryLink && (
+            <EntryIconBtn label="Save entry to library" onClick={() => setSaveEntryOpen(true)}>
+              <BookmarkPlus className="h-3.5 w-3.5" />
             </EntryIconBtn>
           )}
           <EntryIconBtn label="Move entry up" onClick={() => moveWithin(-1)} disabled={index === 0}>
@@ -113,6 +130,7 @@ export function EntryCard({
         )}
 
         {updateOpen && <LibraryUpdateDialog entryId={entry.id} open={updateOpen} onOpenChange={setUpdateOpen} />}
+        {saveEntryOpen && <SaveEntryToLibraryDialog entryId={entry.id} open={saveEntryOpen} onOpenChange={setSaveEntryOpen} />}
       </div>
     </SortableItem>
   );
@@ -131,19 +149,21 @@ function DateRangeEditor({ entry, onUpdate, dateFormat }: { entry: ResumeEntry; 
         displayValue={formatMonth(entry.start_date, dateFormat)}
         placeholder="Start"
         onChange={(value) => onUpdate({ start_date: value || null })}
-        className="max-w-[13ch] text-xs print:hidden"
+        className="max-w-none text-xs print:hidden"
         inline
       />
-      <span className="print:hidden">–</span>
+      {entry.start_date && <span className="print:hidden">–</span>}
+      {entry.start_date && (
       <MonthPicker
         aria-label={`${entryLabel} end month (blank for Present)`}
         value={entry.end_date}
         displayValue={entry.end_date ? formatMonth(entry.end_date, dateFormat) : entry.start_date ? "Present" : ""}
         placeholder="End"
         onChange={(value) => onUpdate({ end_date: value || null })}
-        className="max-w-[13ch] text-xs print:hidden"
+        className="max-w-none text-xs print:hidden"
         inline
       />
+      )}
       <span className="hidden print:inline">{preview}</span>
     </span>
   );
@@ -153,11 +173,11 @@ function EntryLayout({ entry, onUpdate, dateFormat }: { entry: ResumeEntry; onUp
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <input value={entry.title ?? ""} onChange={(e) => onUpdate({ title: e.target.value })} placeholder="Title / Role" aria-label="Entry title" style={{ ...inputStyle, fontWeight: 700, flex: 1 }} />
+        <input value={entry.title ?? ""} onChange={(e) => onUpdate({ title: e.target.value })} placeholder="Title / Role" aria-label="Entry title" style={{ ...inputStyle, fontWeight: 700, flex: 1, minWidth: 0 }} />
         <DateRangeEditor entry={entry} onUpdate={onUpdate} dateFormat={dateFormat} />
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <input value={entry.organization ?? ""} onChange={(e) => onUpdate({ organization: e.target.value })} placeholder="Organization" aria-label="Organization" style={{ ...inputStyle, fontStyle: "italic", flex: 1 }} />
+        <input value={entry.organization ?? ""} onChange={(e) => onUpdate({ organization: e.target.value })} placeholder="Organization" aria-label="Organization" style={{ ...inputStyle, fontStyle: "italic", flex: 1, minWidth: 0 }} />
         <input value={entry.location ?? ""} onChange={(e) => onUpdate({ location: e.target.value })} placeholder="Location" aria-label="Location" style={{ ...inputStyle, fontStyle: "italic", textAlign: "right", width: "20ch" }} />
       </div>
     </div>
@@ -170,7 +190,7 @@ function EducationLayout({ entry, onUpdate, dateFormat }: { entry: ResumeEntry; 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <input value={entry.title ?? ""} onChange={(e) => onUpdate({ title: e.target.value })} placeholder="School / University" aria-label="School" style={{ ...inputStyle, fontWeight: 700, flex: 1 }} />
+        <input value={entry.title ?? ""} onChange={(e) => onUpdate({ title: e.target.value })} placeholder="School / University" aria-label="School" style={{ ...inputStyle, fontWeight: 700, flex: 1, minWidth: 0 }} />
         <DateRangeEditor entry={entry} onUpdate={onUpdate} dateFormat={dateFormat} />
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>

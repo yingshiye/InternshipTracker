@@ -72,8 +72,8 @@ function PickerTrigger({
         className,
       )}
     >
-      <span className={cn("truncate", !label && "text-muted-foreground")}>{label || placeholder}</span>
-      <CalendarDays className={cn("size-3.5 shrink-0 text-muted-foreground", inline && "opacity-0 transition-opacity group-hover/date:opacity-70 group-focus-visible/date:opacity-70")} />
+      <span className={cn(inline ? "whitespace-nowrap" : "truncate", !label && "text-muted-foreground")}>{label || placeholder}</span>
+      {!inline && <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" />}
     </button>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Tables } from "@/types/supabase";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ApplicationRow } from "./ApplicationRow";
 
 type Application = Tables<"applications">;
@@ -33,7 +34,8 @@ export function ApplicationList({
       : applications.filter((a) => a.status === filter);
 
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-card" aria-labelledby="applications-table-title">
+    <TooltipProvider>
+      <section className="overflow-hidden rounded-lg border border-border bg-card" aria-labelledby="applications-table-title">
       <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 id="applications-table-title" className="text-sm font-semibold text-foreground">Applications</h2>
@@ -86,6 +88,7 @@ export function ApplicationList({
           </tbody>
         </table>
       </div>
-    </section>
+      </section>
+    </TooltipProvider>
   );
 }
