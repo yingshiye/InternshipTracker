@@ -18,6 +18,7 @@ import {
   CircleDot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useEditor } from "./useEditorController";
 import { ResumeMetadataDialog } from "./ResumeMetadataDialog";
 import { VersionHistoryDialog } from "./VersionHistoryDialog";
@@ -96,26 +97,30 @@ export function EditorTopBar({ userId }: { userId: string }) {
     <div className="flex flex-col border-b border-gray-100 print:hidden dark:border-gray-800">
       <div className="flex min-h-14 flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2">
         <div className="flex min-w-0 items-center gap-3">
-          <Link
-            href="/resumes"
-            className="rounded text-gray-500 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 dark:hover:text-gray-100"
-            aria-label="Back to resumes"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+          <Tooltip label="Back to resumes">
+            <Link
+              href="/resumes"
+              className="rounded text-gray-500 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 dark:hover:text-gray-100"
+              aria-label="Back to resumes"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Tooltip>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                 {draft.resume.name}
               </span>
-              <button
-                type="button"
-                onClick={() => setMetadataOpen(true)}
-                aria-label="Edit resume name, target company and role"
-                className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-1 dark:hover:bg-gray-800"
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
+              <Tooltip label="Edit resume details">
+                <button
+                  type="button"
+                  onClick={() => setMetadataOpen(true)}
+                  aria-label="Edit resume name, target company and role"
+                  className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-1 dark:hover:bg-gray-800"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+              </Tooltip>
             </div>
             <p className="truncate text-xs text-gray-400">
               {draft.resume.target_company || draft.resume.target_role
@@ -133,26 +138,34 @@ export function EditorTopBar({ userId }: { userId: string }) {
             </Button>
           )}
           <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-700" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => void undo()}
-            disabled={!canUndo || conflict}
-            aria-label="Undo"
-            className="h-8 w-8 p-0"
-          >
-            <Undo2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => void redo()}
-            disabled={!canRedo || conflict}
-            aria-label="Redo"
-            className="h-8 w-8 p-0"
-          >
-            <Redo2 className="h-4 w-4" />
-          </Button>
+          <Tooltip label="Undo">
+            <span className="inline-flex">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void undo()}
+                disabled={!canUndo || conflict}
+                aria-label="Undo"
+                className="h-8 w-8 p-0"
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip label="Redo">
+            <span className="inline-flex">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void redo()}
+                disabled={!canRedo || conflict}
+                aria-label="Redo"
+                className="h-8 w-8 p-0"
+              >
+                <Redo2 className="h-4 w-4" />
+              </Button>
+            </span>
+          </Tooltip>
           <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-700" />
           <Button
             variant="outline"

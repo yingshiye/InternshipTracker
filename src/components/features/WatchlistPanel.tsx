@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -137,16 +138,19 @@ function WatchlistRow({ item }: { item: WatchlistItem }) {
             )}
           </div>
 
-          <button
-            onClick={() => {
-              setDeleteError(null);
-              setDeleteOpen(true);
-            }}
-            title="Remove from watchlist"
-            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip label="Remove from watchlist">
+            <button
+              type="button"
+              aria-label={`Remove ${item.company} from watchlist`}
+              onClick={() => {
+                setDeleteError(null);
+                setDeleteOpen(true);
+              }}
+              className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
         </div>
       </Card>
 

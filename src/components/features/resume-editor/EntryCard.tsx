@@ -9,6 +9,7 @@ import { LibraryUpdateDialog } from "./LibraryUpdateDialog";
 import { EducationExtraLines } from "./EducationExtras";
 import { SaveEntryToLibraryDialog } from "./SaveEntryToLibraryDialog";
 import { MonthPicker } from "@/components/ui/date-picker";
+import { Tooltip } from "@/components/ui/tooltip";
 import { formatDateRange, formatMonth } from "@/lib/resume/dates";
 import type { ResumeEntry, ResumeSection, EducationData, SkillsData } from "@/lib/resume/types";
 
@@ -364,7 +365,7 @@ function MicroBtn({
   disabled?: boolean;
   children: React.ReactNode;
 }) {
-  return (
+  const button = (
     <button
       type="button"
       aria-label={label}
@@ -375,10 +376,16 @@ function MicroBtn({
       {children}
     </button>
   );
+
+  return (
+    <Tooltip label={label}>
+      {disabled ? <span className="inline-flex">{button}</span> : button}
+    </Tooltip>
+  );
 }
 
 function EntryIconBtn({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
-  return (
+  const button = (
     <button
       type="button"
       aria-label={label}
@@ -388,5 +395,11 @@ function EntryIconBtn({ label, onClick, disabled, children }: { label: string; o
     >
       {children}
     </button>
+  );
+
+  return (
+    <Tooltip label={label}>
+      {disabled ? <span className="inline-flex">{button}</span> : button}
+    </Tooltip>
   );
 }

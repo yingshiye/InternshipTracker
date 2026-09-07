@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { LayoutKind } from "@/lib/resume/types";
 
 export type SkillCategoryForm = {
@@ -65,20 +66,22 @@ export function LibraryBlockTypeFields({ idPrefix, layoutKind, details, setDetai
                 value={category.label}
                 onChange={(event) => updateCategory(categoryIndex, { label: event.target.value })}
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Remove skill category ${categoryIndex + 1}`}
-                onClick={() =>
-                  setDetail(
-                    "skillCategories",
-                    details.skillCategories.filter((_, index) => index !== categoryIndex),
-                  )
-                }
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <Tooltip label="Remove skill category">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove skill category ${categoryIndex + 1}`}
+                  onClick={() =>
+                    setDetail(
+                      "skillCategories",
+                      details.skillCategories.filter((_, index) => index !== categoryIndex),
+                    )
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </Tooltip>
             </div>
             {category.items.map((skill, skillIndex) => (
               <div key={skillIndex} className="flex items-center gap-2 pl-3">
@@ -88,19 +91,21 @@ export function LibraryBlockTypeFields({ idPrefix, layoutKind, details, setDetai
                   value={skill}
                   onChange={(event) => updateSkill(categoryIndex, skillIndex, event.target.value)}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Remove skill ${skillIndex + 1}`}
-                  onClick={() =>
-                    updateCategory(categoryIndex, {
-                      items: category.items.filter((_, index) => index !== skillIndex),
-                    })
-                  }
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <Tooltip label="Remove skill">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Remove skill ${skillIndex + 1}`}
+                    onClick={() =>
+                      updateCategory(categoryIndex, {
+                        items: category.items.filter((_, index) => index !== skillIndex),
+                      })
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </Tooltip>
               </div>
             ))}
             <Button

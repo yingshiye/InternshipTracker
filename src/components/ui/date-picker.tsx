@@ -5,6 +5,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Popover } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -122,13 +123,17 @@ export function DatePicker({ id, value, onChange, disabled, className, placehold
       </Popover.Trigger>
       <PickerPanel className="w-[19rem]">
         <div className="mb-3 flex items-center justify-between">
-          <button type="button" onClick={() => moveMonth(-1)} aria-label="Previous month" className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <ChevronLeft className="size-4" />
-          </button>
+          <Tooltip label="Previous month">
+            <button type="button" onClick={() => moveMonth(-1)} aria-label="Previous month" className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <ChevronLeft className="size-4" />
+            </button>
+          </Tooltip>
           <div className="text-sm font-medium">{MONTHS[view.month]} {view.year}</div>
-          <button type="button" onClick={() => moveMonth(1)} aria-label="Next month" className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <ChevronRight className="size-4" />
-          </button>
+          <Tooltip label="Next month">
+            <button type="button" onClick={() => moveMonth(1)} aria-label="Next month" className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <ChevronRight className="size-4" />
+            </button>
+          </Tooltip>
         </div>
         <div className="grid grid-cols-7 text-center text-[11px] text-muted-foreground">
           {WEEKDAYS.map((weekday) => <span key={weekday} className="pb-1.5">{weekday}</span>)}
@@ -191,9 +196,13 @@ export function MonthPicker({
       </Popover.Trigger>
       <PickerPanel className="w-72">
         <div className="mb-3 flex items-center justify-between">
-          <button type="button" onClick={() => setYear((value) => value - 1)} aria-label="Previous year" className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronLeft className="size-4" /></button>
+          <Tooltip label="Previous year">
+            <button type="button" onClick={() => setYear((value) => value - 1)} aria-label="Previous year" className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronLeft className="size-4" /></button>
+          </Tooltip>
           <span className="text-sm font-medium">{year}</span>
-          <button type="button" onClick={() => setYear((value) => value + 1)} aria-label="Next year" className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronRight className="size-4" /></button>
+          <Tooltip label="Next year">
+            <button type="button" onClick={() => setYear((value) => value + 1)} aria-label="Next year" className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronRight className="size-4" /></button>
+          </Tooltip>
         </div>
         <div className="grid grid-cols-3 gap-1">
           {MONTHS.map((month, monthIndex) => (

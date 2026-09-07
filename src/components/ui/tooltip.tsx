@@ -8,9 +8,18 @@ export function TooltipProvider({ children, delayDuration = 300 }: { children: R
 }
 
 export function Tooltip({ label, children, className }: { label: string; children: React.ReactElement; className?: string }) {
+  // Disabled controls do not emit pointer/focus events, so Radix cannot open
+  // a tooltip from the button itself. The neutral wrapper preserves the
+  // disabled control while still making its explanation available on hover.
+  const trigger = (children.props as { disabled?: boolean }).disabled ? (
+    <span className="inline-flex">{children}</span>
+  ) : (
+    children
+  );
+
   return (
     <TooltipPrimitive.Root>
-      <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Trigger asChild>{trigger}</TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
         <TooltipPrimitive.Content
           side="top"

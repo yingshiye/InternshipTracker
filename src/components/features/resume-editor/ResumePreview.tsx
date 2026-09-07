@@ -9,6 +9,7 @@ import { SectionBlock } from "./SectionBlock";
 import { SortableList } from "./dnd/SortableList";
 import { PAGE_WIDTH_PX, DPI, printableHeightPx, targetPageLimit } from "@/lib/resume/measure";
 import { LINE_HEIGHT, SECTION_GAP_PT } from "@/lib/resume/style";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const PT_TO_PX = DPI / 72;
 const ZOOM_STEPS = [0.6, 0.75, 0.9, 1, 1.15, 1.3];
@@ -136,25 +137,33 @@ export function ResumePreview() {
         </div>
 
         <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-white px-2 py-1 text-xs shadow-md ring-1 ring-gray-200 print:hidden dark:bg-gray-800 dark:ring-gray-700">
-          <button
-            type="button"
-            aria-label="Zoom out"
-            disabled={zoom <= ZOOM_STEPS[0]}
-            onClick={zoomOut}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-700"
-          >
-            <ZoomOut className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip label="Zoom out">
+            <span className="inline-flex">
+              <button
+                type="button"
+                aria-label="Zoom out"
+                disabled={zoom <= ZOOM_STEPS[0]}
+                onClick={zoomOut}
+                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-700"
+              >
+                <ZoomOut className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          </Tooltip>
           <span className="w-10 text-center tabular-nums text-gray-500">{Math.round(zoom * 100)}%</span>
-          <button
-            type="button"
-            aria-label="Zoom in"
-            disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]}
-            onClick={zoomIn}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-700"
-          >
-            <ZoomIn className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip label="Zoom in">
+            <span className="inline-flex">
+              <button
+                type="button"
+                aria-label="Zoom in"
+                disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]}
+                onClick={zoomIn}
+                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-700"
+              >
+                <ZoomIn className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          </Tooltip>
           <span className="mx-1 h-4 w-px bg-gray-200 dark:bg-gray-600" aria-hidden />
           <button
             type="button"

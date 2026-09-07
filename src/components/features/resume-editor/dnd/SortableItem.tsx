@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
+import { Tooltip } from "@/components/ui/tooltip";
 
 /**
  * One sortable row. Renders a drag handle plus its children. The handle is the
@@ -27,15 +28,17 @@ export function SortableItem({
 
   return (
     <div ref={setNodeRef} style={style} className="flex items-start gap-1.5">
-      <button
-        type="button"
-        className="mt-0.5 cursor-grab touch-none text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-gray-600 dark:hover:text-gray-400"
-        aria-label={handleLabel}
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
+      <Tooltip label={handleLabel}>
+        <button
+          type="button"
+          className="mt-0.5 cursor-grab touch-none text-gray-300 hover:text-gray-500 active:cursor-grabbing dark:text-gray-600 dark:hover:text-gray-400"
+          aria-label={handleLabel}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      </Tooltip>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );

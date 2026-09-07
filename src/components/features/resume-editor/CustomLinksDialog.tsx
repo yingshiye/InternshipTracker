@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -157,7 +158,7 @@ function IconBtn({
   disabled?: boolean;
   children: React.ReactNode;
 }) {
-  return (
+  const button = (
     <button
       type="button"
       aria-label={label}
@@ -167,5 +168,11 @@ function IconBtn({
     >
       {children}
     </button>
+  );
+
+  return (
+    <Tooltip label={label}>
+      {disabled ? <span className="inline-flex">{button}</span> : button}
+    </Tooltip>
   );
 }

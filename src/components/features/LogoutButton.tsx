@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export function LogoutButton({ collapsed = false }: { collapsed?: boolean }) {
   const router = useRouter();
@@ -15,10 +16,11 @@ export function LogoutButton({ collapsed = false }: { collapsed?: boolean }) {
     router.refresh();
   }
 
-  return (
+  const button = (
     <button
+      type="button"
       onClick={handleLogout}
-      title={collapsed ? "Sign out" : undefined}
+      aria-label="Sign out"
       className={cn(
         "flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         collapsed && "justify-center px-0"
@@ -28,4 +30,6 @@ export function LogoutButton({ collapsed = false }: { collapsed?: boolean }) {
       {!collapsed && "Sign out"}
     </button>
   );
+
+  return collapsed ? <Tooltip label="Sign out">{button}</Tooltip> : button;
 }

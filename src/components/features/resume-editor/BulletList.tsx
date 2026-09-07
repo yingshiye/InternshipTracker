@@ -6,6 +6,7 @@ import { useEditor } from "./useEditorController";
 import { SortableItem } from "./dnd/SortableItem";
 import { SortableList } from "./dnd/SortableList";
 import { SaveAsLibraryBulletDialog } from "./SaveAsLibraryBulletDialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { ResumeEntryBullet } from "@/lib/resume/types";
 
 export function BulletList({ entryId, hasSourceBlock, addLabel = "Add bullet" }: { entryId: string; hasSourceBlock: boolean; addLabel?: string }) {
@@ -145,9 +146,15 @@ function BulletRow({
 }
 
 function MiniBtn({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
-  return (
+  const button = (
     <button type="button" aria-label={label} onClick={onClick} disabled={disabled} className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-800">
       {children}
     </button>
+  );
+
+  return (
+    <Tooltip label={label}>
+      {disabled ? <span className="inline-flex">{button}</span> : button}
+    </Tooltip>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { createLibraryBlock, libraryBlockFormToInput } from "@/lib/resume/library";
 import { EMPTY_LIBRARY_BLOCK_FORM, LibraryBlockForm, type LibraryBlockFormValues } from "../LibraryBlockForm";
@@ -109,16 +110,18 @@ export function CopyBlockMenu({ section, onClose }: { section: ResumeSection; on
                       <span className="font-medium">{b.name}</span>
                       {b.title && <span className="text-gray-500"> — {b.title}</span>}
                     </button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0"
-                      aria-label={`Edit ${b.name}`}
-                      onClick={() => setEditingBlockId(b.id)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
+                    <Tooltip label="Edit library block">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        aria-label={`Edit ${b.name}`}
+                        onClick={() => setEditingBlockId(b.id)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </Tooltip>
                   </div>
                 ))}
                 <Button

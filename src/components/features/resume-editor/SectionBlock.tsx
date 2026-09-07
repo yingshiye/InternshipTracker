@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Plus, Trash2, ChevronUp, ChevronDown, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useEditor } from "./useEditorController";
 import { SortableItem } from "./dnd/SortableItem";
 import { SortableList } from "./dnd/SortableList";
@@ -130,7 +131,7 @@ function IconBtn({
   disabled?: boolean;
   children: React.ReactNode;
 }) {
-  return (
+  const button = (
     <button
       type="button"
       aria-label={label}
@@ -140,5 +141,11 @@ function IconBtn({
     >
       {children}
     </button>
+  );
+
+  return (
+    <Tooltip label={label}>
+      {disabled ? <span className="inline-flex">{button}</span> : button}
+    </Tooltip>
   );
 }

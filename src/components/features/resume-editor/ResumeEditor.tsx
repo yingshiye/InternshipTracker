@@ -11,6 +11,7 @@ import { SettingsPanel } from "./SettingsPanel";
 import { ResumeCheckPanel } from "./ResumeCheckPanel";
 import { ResumeMeasurementDocument } from "./ResumeMeasurementDocument";
 import { SubmitForApplicationPanel, type SubmitTargetApplication } from "./SubmitForApplicationPanel";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { EditorDraft, LibraryData } from "./editor-types";
 import "@/app/resume-print.css";
 
@@ -105,15 +106,16 @@ export function ResumeEditor({
                 pane === "settings" ? "flex" : "hidden"
               } xl:flex`}
             >
-              <button
-                type="button"
-                onClick={() => setSettingsCollapsed((value) => !value)}
-                className="hidden h-11 items-center justify-center border-b border-gray-100 text-gray-500 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-[-2px] xl:flex dark:border-gray-800 dark:hover:bg-gray-900"
-                aria-label={settingsCollapsed ? "Expand settings panel" : "Collapse settings panel"}
-                title={settingsCollapsed ? "Expand settings" : "Collapse settings"}
-              >
-                {settingsCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
-              </button>
+              <Tooltip label={settingsCollapsed ? "Expand settings" : "Collapse settings"}>
+                <button
+                  type="button"
+                  onClick={() => setSettingsCollapsed((value) => !value)}
+                  className="hidden h-11 items-center justify-center border-b border-gray-100 text-gray-500 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-[-2px] xl:flex dark:border-gray-800 dark:hover:bg-gray-900"
+                  aria-label={settingsCollapsed ? "Expand settings panel" : "Collapse settings panel"}
+                >
+                  {settingsCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+                </button>
+              </Tooltip>
               <p className="flex items-start gap-2 border-b border-gray-100 px-3 py-2 text-xs text-gray-500 xl:hidden dark:border-gray-800">
                 <MonitorSmartphone className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 Reliable Letter-size PDF export needs desktop Google Chrome. Everything else — editing, version

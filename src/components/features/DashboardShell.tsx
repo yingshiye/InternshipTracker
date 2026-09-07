@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { LogoutButton } from "@/components/features/LogoutButton";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -86,14 +87,16 @@ export function DashboardShell({
             <span className="truncate text-sm font-semibold tracking-tight">Internship Tracker</span>
           )}
         </Link>
-        <button
-          type="button"
-          onClick={() => setMobileOpen(false)}
-          aria-label="Close navigation"
-          className="rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden"
-        >
-          <X className="size-4" />
-        </button>
+        <Tooltip label="Close navigation">
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close navigation"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden"
+          >
+            <X className="size-4" />
+          </button>
+        </Tooltip>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 p-2" aria-label="Primary navigation">
@@ -101,12 +104,12 @@ export function DashboardShell({
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
           const Icon = item.icon;
           return (
-            <Link
-              key={item.href}
+            <Tooltip key={item.href} label={item.label}>
+              <Link
               href={item.href}
               onClick={() => setMobileOpen(false)}
               aria-current={active ? "page" : undefined}
-              title={collapsed ? item.label : undefined}
+              aria-label={item.label}
               className={cn(
                 "relative flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors",
                 active
@@ -114,49 +117,54 @@ export function DashboardShell({
                   : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
                 collapsed && "justify-center px-0"
               )}
-            >
-              <Icon className="size-4 shrink-0" />
-              {!collapsed && <span className="truncate">{item.label}</span>}
-              {item.href === "/watchlist" && changedCount > 0 && (
-                <span
-                  aria-label={`${changedCount} watchlist changes`}
-                  className={cn(
-                    "ml-auto size-1.5 rounded-full bg-amber-500",
-                    collapsed && "absolute right-2 top-2"
-                  )}
-                />
-              )}
-            </Link>
+              >
+                <Icon className="size-4 shrink-0" />
+                {!collapsed && <span className="truncate">{item.label}</span>}
+                {item.href === "/watchlist" && changedCount > 0 && (
+                  <span
+                    aria-label={`${changedCount} watchlist changes`}
+                    className={cn(
+                      "ml-auto size-1.5 rounded-full bg-amber-500",
+                      collapsed && "absolute right-2 top-2"
+                    )}
+                  />
+                )}
+              </Link>
+            </Tooltip>
           );
         })}
       </nav>
 
       <div className="space-y-1 border-t border-sidebar-border p-2">
-        <button
-          type="button"
-          onClick={toggleTheme}
-          title={collapsed ? (dark ? "Use light theme" : "Use dark theme") : undefined}
-          className={cn(
-            "flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-            collapsed && "justify-center px-0"
-          )}
-        >
-          {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-          {!collapsed && <span>{dark ? "Light mode" : "Dark mode"}</span>}
-        </button>
+        <Tooltip label={dark ? "Use light theme" : "Use dark theme"}>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={dark ? "Use light theme" : "Use dark theme"}
+            className={cn(
+              "flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              collapsed && "justify-center px-0"
+            )}
+          >
+            {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            {!collapsed && <span>{dark ? "Light mode" : "Dark mode"}</span>}
+          </button>
+        </Tooltip>
         <LogoutButton collapsed={collapsed} />
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={cn(
-            "hidden h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:flex",
-            collapsed && "justify-center px-0"
-          )}
-        >
-          {collapsed ? <PanelLeftOpen className="size-4" /> : <ChevronLeft className="size-4" />}
-          {!collapsed && <span>Collapse</span>}
-        </button>
+        <Tooltip label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={cn(
+              "hidden h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:flex",
+              collapsed && "justify-center px-0"
+            )}
+          >
+            {collapsed ? <PanelLeftOpen className="size-4" /> : <ChevronLeft className="size-4" />}
+            {!collapsed && <span>Collapse</span>}
+          </button>
+        </Tooltip>
       </div>
     </>
   );
@@ -182,14 +190,16 @@ export function DashboardShell({
       </aside>
       <div className={cn("min-w-0 transition-[padding] duration-200 md:pl-60", collapsed && "md:pl-[68px]")}>
         <header className="sticky top-0 z-30 flex h-14 items-center border-b border-border bg-background/95 px-4 backdrop-blur md:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open navigation"
-            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <Menu className="size-5" />
-          </button>
+          <Tooltip label="Open navigation">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open navigation"
+              className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Menu className="size-5" />
+            </button>
+          </Tooltip>
           <span className="ml-2 text-sm font-semibold">Internship Tracker</span>
         </header>
         <main className="min-h-screen bg-background">{children}</main>

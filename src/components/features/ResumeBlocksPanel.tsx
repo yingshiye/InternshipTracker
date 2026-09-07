@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, FilePlus2, Pencil, Plus, Trash2 } from "lucide-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -191,22 +192,26 @@ function LibraryBlockCard({ block, bullets, resumes, sections }: { block: Librar
               {bullets.length} {bullets.length === 1 ? "bullet" : "bullets"}
               {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             </button>
-            <button
-              type="button"
-              onClick={() => setEditOpen(true)}
-              title="Edit"
-              className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-900 dark:hover:text-gray-200"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setDeleteOpen(true)}
-              title="Delete"
-              className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            <Tooltip label="Edit block">
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                aria-label={`Edit ${block.name}`}
+                className="rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-900 dark:hover:text-gray-200"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
+            <Tooltip label="Delete block">
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(true)}
+                aria-label={`Delete ${block.name}`}
+                className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
           </div>
         </div>
 
@@ -403,9 +408,18 @@ function BulletsEditor({ blockId, bullets }: { blockId: string; bullets: Library
           rows={2}
           className="flex-1"
         />
-        <Button type="submit" size="sm" disabled={busy || !newContent.trim()}>
-          <Plus className="h-4 w-4" />
-        </Button>
+        <Tooltip label="Add bullet">
+          <span className="inline-flex">
+            <Button
+              type="submit"
+              size="sm"
+              aria-label="Add bullet"
+              disabled={busy || !newContent.trim()}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </span>
+        </Tooltip>
       </form>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
@@ -476,42 +490,55 @@ function BulletRow({
     <li className="flex items-start justify-between gap-2 rounded-md px-1 py-1 hover:bg-gray-50 dark:hover:bg-gray-900">
       <span className="text-sm text-gray-700 dark:text-gray-300">{bullet.content}</span>
       <div className="flex shrink-0 items-center gap-0.5">
-        <button
-          type="button"
-          onClick={onMoveUp}
-          disabled={!onMoveUp || busy}
-          title="Move up"
-          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-        >
+        <BulletIconButton label="Move bullet up" onClick={onMoveUp} disabled={!onMoveUp || busy}>
           <ChevronUp className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={onMoveDown}
-          disabled={!onMoveDown || busy}
-          title="Move down"
-          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-        >
+        </BulletIconButton>
+        <BulletIconButton label="Move bullet down" onClick={onMoveDown} disabled={!onMoveDown || busy}>
           <ChevronDown className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          title="Edit"
-          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-        >
+        </BulletIconButton>
+        <BulletIconButton label="Edit bullet" onClick={() => setEditing(true)}>
           <Pencil className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={busy}
-          title="Delete"
-          className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 dark:hover:bg-red-950 dark:hover:text-red-400"
-        >
+        </BulletIconButton>
+        <BulletIconButton label="Delete bullet" onClick={onDelete} disabled={busy} destructive>
           <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        </BulletIconButton>
       </div>
     </li>
+  );
+}
+
+function BulletIconButton({
+  label,
+  onClick,
+  disabled,
+  destructive = false,
+  children,
+}: {
+  label: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  destructive?: boolean;
+  children: React.ReactNode;
+}) {
+  const button = (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className={
+        destructive
+          ? "rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 dark:hover:bg-red-950 dark:hover:text-red-400"
+          : "rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+      }
+    >
+      {children}
+    </button>
+  );
+
+  return (
+    <Tooltip label={label}>
+      {disabled ? <span className="inline-flex">{button}</span> : button}
+    </Tooltip>
   );
 }
