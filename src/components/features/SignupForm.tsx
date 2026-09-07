@@ -35,7 +35,7 @@ export function SignupForm() {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-center text-sm text-muted-foreground">
             Check your email for a confirmation link.
           </p>
         </CardContent>
@@ -73,17 +73,17 @@ export function SignupForm() {
             />
           </div>
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           )}
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Creating account…" : "Create account"}
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-500">
+        <p className="mt-4 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="text-gray-900 underline dark:text-gray-100"
+            className="text-foreground underline"
           >
             Sign in
           </Link>

@@ -36,7 +36,7 @@ export function ForgotPasswordForm() {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-center text-sm text-muted-foreground">
             If an account exists for {email}, we&apos;ve sent a link to reset
             your password.
           </p>
@@ -62,17 +62,17 @@ export function ForgotPasswordForm() {
             />
           </div>
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           )}
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Sending…" : "Send reset link"}
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-500">
+        <p className="mt-4 text-center text-sm text-muted-foreground">
           Remembered your password?{" "}
           <Link
             href="/login"
-            className="text-gray-900 underline dark:text-gray-100"
+            className="text-foreground underline"
           >
             Sign in
           </Link>

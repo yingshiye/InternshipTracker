@@ -73,17 +73,17 @@ export function ResetPasswordForm() {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-center text-sm text-muted-foreground">
             This reset link is invalid or has expired.
           </p>
-          <p className="mt-2 text-center text-sm text-gray-500">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             If you opened it on a different device or browser than the one
             you requested it from, try opening it there instead.
           </p>
-          <p className="mt-4 text-center text-sm text-gray-500">
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             <Link
               href="/forgot-password"
-              className="text-gray-900 underline dark:text-gray-100"
+              className="text-foreground underline"
             >
               Request a new link
             </Link>
@@ -97,7 +97,7 @@ export function ResetPasswordForm() {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-center text-sm text-gray-500">Verifying link…</p>
+          <p className="text-center text-sm text-muted-foreground">Verifying link…</p>
         </CardContent>
       </Card>
     );
@@ -134,7 +134,7 @@ export function ResetPasswordForm() {
             />
           </div>
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           )}
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Updating…" : "Update password"}

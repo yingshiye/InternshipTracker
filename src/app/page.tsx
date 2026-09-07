@@ -96,12 +96,20 @@ export default function LandingPage() {
             Source
           </a>
         </nav>
-        <Link
-          href="/login"
-          className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-black transition-opacity hover:opacity-90"
-        >
-          Sign in
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/login"
+            className="hidden text-sm font-medium text-white/70 transition-colors hover:text-white sm:inline"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/signup"
+            className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-black transition-opacity hover:opacity-90"
+          >
+            Sign up
+          </Link>
+        </div>
       </header>
 
       <main className="relative z-10">

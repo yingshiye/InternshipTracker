@@ -42,7 +42,7 @@ export function LoginForm() {
     <Card>
       <CardContent className="pt-6">
         {resetSuccess && (
-          <p className="mb-4 text-center text-sm text-green-600 dark:text-green-400">
+          <p className="mb-4 text-center text-sm text-emerald-600 dark:text-emerald-400">
             Your password has been updated. Sign in with your new password.
           </p>
         )}
@@ -64,7 +64,7 @@ export function LoginForm() {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-xs text-gray-500 underline hover:text-gray-700 dark:hover:text-gray-300"
+                className="text-xs text-muted-foreground underline hover:text-foreground"
               >
                 Forgot password?
               </Link>
@@ -80,17 +80,17 @@ export function LoginForm() {
             />
           </div>
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           )}
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Signing in…" : "Sign in"}
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-500">
+        <p className="mt-4 text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"
-            className="text-gray-900 underline dark:text-gray-100"
+            className="text-foreground underline"
           >
             Sign up
           </Link>
