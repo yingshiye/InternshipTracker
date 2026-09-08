@@ -237,7 +237,7 @@ export function MonthPicker({
 export function DateTimePicker({ id, value, onChange, disabled, className, placeholder = "Select date", "aria-label": ariaLabel }: PickerProps) {
   const [datePart = "", timePart = ""] = value?.split("T") ?? [];
   return (
-    <div className={cn("grid grid-cols-[minmax(0,1fr)_7rem] gap-2", className)}>
+    <div className={cn("grid grid-cols-[minmax(0,1fr)_9.5rem] gap-2", className)}>
       <DatePicker
         id={id}
         value={datePart}
