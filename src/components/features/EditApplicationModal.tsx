@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarPlus, Pencil } from "lucide-react";
+import { CalendarPlus, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -115,6 +115,9 @@ export function EditApplicationModal({
   const [eventForm, setEventForm] = useState<EventForm>(EMPTY_EVENT_FORM);
   const [eventLoading, setEventLoading] = useState(false);
   const [eventError, setEventError] = useState<string | null>(null);
+  const [eventDeleteOpen, setEventDeleteOpen] = useState(false);
+  const [eventDeleting, setEventDeleting] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const router = useRouter();
 
   const orderedEvents = useMemo(
@@ -145,6 +148,11 @@ export function EditApplicationModal({
     setEventError(null);
     setEventForm(eventFormFrom(event));
     setEditingEventId(event.id);
+  }
+
+  function beginDeleteEvent(event: Event) {
+    setEventToDelete(event);
+    setEventDeleteOpen(true);
   }
 
   function handleOpenChange(next: boolean) {
@@ -254,6 +262,37 @@ export function EditApplicationModal({
     } finally {
       setEventLoading(false);
     }
+  }
+
+  async function handleDeleteEvent() {
+    if (!eventToDelete) return;
+
+    setEventError(null);
+    setEventDeleting(true);
+    const supabase = getSupabaseBrowserClient();
+    const { error: deleteError } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", eventToDelete.id);
+
+    if (deleteError) {
+      setEventError(deleteError.message);
+      setEventDeleting(false);
+      return;
+    }
+
+    const deletedId = eventToDelete.id;
+    setLocalEvents((previous) =>
+      previous.filter((item) => item.id !== deletedId),
+    );
+    setEventDeleting(false);
+    setEventDeleteOpen(false);
+    setEventToDelete(null);
+    if (editingEventId === deletedId) {
+      setEditingEventId(null);
+      setEventForm(EMPTY_EVENT_FORM);
+    }
+    router.refresh();
   }
 
   return (
@@ -465,18 +504,38 @@ export function EditApplicationModal({
                 {eventError && (
                   <p className="text-sm text-destructive">{eventError}</p>
                 )}
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditingEventId(null)}
-                  >
-                    Back to events
-                  </Button>
-                  <Button type="submit" size="sm" disabled={eventLoading}>
-                    {eventLoading ? "Saving…" : "Save event"}
-                  </Button>
+                <div className="flex items-center justify-between gap-2">
+                  {editingEventId !== "new" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        const current = localEvents.find(
+                          (item) => item.id === editingEventId,
+                        );
+                        if (current) beginDeleteEvent(current);
+                      }}
+                    >
+                      <Trash2 data-icon="inline-start" />
+                      Delete event
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingEventId(null)}
+                    >
+                      Back to events
+                    </Button>
+                    <Button type="submit" size="sm" disabled={eventLoading}>
+                      {eventLoading ? "Saving…" : "Save event"}
+                    </Button>
+                  </div>
                 </div>
               </form>
             ) : orderedEvents.length === 0 ? (
@@ -493,35 +552,89 @@ export function EditApplicationModal({
             ) : (
               <div className="mt-3 flex flex-col gap-1.5">
                 {orderedEvents.map((event) => (
-                  <button
+                  <div
                     key={event.id}
-                    type="button"
-                    onClick={() => beginEditEvent(event)}
-                    className="group/event flex w-full items-start gap-3 rounded-lg px-2.5 py-2.5 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-label={`Edit event: ${event.title}`}
+                    className="group/event flex w-full items-start gap-1 rounded-lg px-1 py-1 transition-colors hover:bg-muted"
                   >
-                    <span className="mt-1.5 size-2 shrink-0 rounded-full bg-chart-4" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-foreground">
-                        {event.title}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {formatEventDate(event.event_date)}
-                      </span>
-                      {event.notes && (
-                        <span className="mt-1 block line-clamp-2 text-xs text-muted-foreground">
-                          {event.notes}
+                    <button
+                      type="button"
+                      onClick={() => beginEditEvent(event)}
+                      className="flex min-w-0 flex-1 items-start gap-3 rounded-md px-1.5 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={`Edit event: ${event.title}`}
+                    >
+                      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-chart-4" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-foreground">
+                          {event.title}
                         </span>
-                      )}
-                    </span>
-                    <Pencil className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-60 transition-opacity group-hover/event:opacity-100" />
-                  </button>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          {formatEventDate(event.event_date)}
+                        </span>
+                        {event.notes && (
+                          <span className="mt-1 block line-clamp-2 text-xs text-muted-foreground">
+                            {event.notes}
+                          </span>
+                        )}
+                      </span>
+                      <Pencil className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-60 transition-opacity group-hover/event:opacity-100" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => beginDeleteEvent(event)}
+                      className="mt-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground opacity-60 transition-opacity hover:text-destructive group-hover/event:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={`Delete event: ${event.title}`}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
           </section>
         </div>
       </DialogContent>
+
+      <Dialog
+        open={eventDeleteOpen}
+        onOpenChange={(next) => {
+          if (!next) {
+            setEventDeleting(false);
+            setEventToDelete(null);
+          }
+          setEventDeleteOpen(next);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base font-medium">
+              Delete event?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will permanently delete{" "}
+            <span className="font-medium text-foreground">
+              {eventToDelete?.title || "this event"}
+            </span>
+            . This cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button
+              variant="outline"
+              onClick={() => setEventDeleteOpen(false)}
+              disabled={eventDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteEvent}
+              disabled={eventDeleting}
+            >
+              {eventDeleting ? "Deleting…" : "Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
