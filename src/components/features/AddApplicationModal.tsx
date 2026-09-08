@@ -24,7 +24,10 @@ import {
 } from "@/components/ui/select";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { normalizeUrl } from "@/lib/url";
+import { withTimeout } from "@/lib/utils";
 import type { ApplicationStatus } from "@/types/supabase";
+
+const SUPABASE_TIMEOUT_MS = 10_000;
 
 const STATUS_OPTIONS: { value: ApplicationStatus; label: string }[] = [
   { value: "wishlist", label: "Wishlist" },
@@ -45,7 +48,7 @@ const EMPTY_FORM = {
   notes: "",
 };
 
-export function AddApplicationModal() {
+export function AddApplicationModal({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,49 +76,51 @@ export function AddApplicationModal() {
     }
 
     const supabase = getSupabaseBrowserClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
-      setError("Not authenticated.");
-      setLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.from("applications").insert({
-      user_id: user.id,
-      company: form.company,
-      role: form.role,
-      status: form.status,
-      location: form.location || null,
-      job_url: normalizedJobUrl,
-      applied_date: form.applied_date || null,
-      notes: form.notes || null,
-    });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
-
-    // The cron job (using the service-role key) is the only writer of
-    // url_snapshots — it creates the row on its first pass over this URL.
-    if (normalizedJobUrl) {
-      await supabase.from("user_watchlist").upsert(
-        {
-          user_id: user.id,
+    try {
+      const { error } = await withTimeout(
+        supabase.from("applications").insert({
+          user_id: userId,
           company: form.company,
-          url: normalizedJobUrl,
-        },
-        { onConflict: "user_id,url", ignoreDuplicates: true }
+          role: form.role,
+          status: form.status,
+          location: form.location || null,
+          job_url: normalizedJobUrl,
+          applied_date: form.applied_date || null,
+          notes: form.notes || null,
+        }),
+        SUPABASE_TIMEOUT_MS
       );
-    }
 
-    setOpen(false);
-    setForm(EMPTY_FORM);
-    router.refresh();
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      // The cron job (using the service-role key) is the only writer of
+      // url_snapshots — it creates the row on its first pass over this URL.
+      if (normalizedJobUrl) {
+        await withTimeout(
+          supabase.from("user_watchlist").upsert(
+            {
+              user_id: userId,
+              company: form.company,
+              url: normalizedJobUrl,
+            },
+            { onConflict: "user_id,url", ignoreDuplicates: true }
+          ),
+          SUPABASE_TIMEOUT_MS
+        );
+      }
+
+      setOpen(false);
+      setForm(EMPTY_FORM);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
