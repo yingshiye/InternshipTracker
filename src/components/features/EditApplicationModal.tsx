@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker, DateTimePicker } from "@/components/ui/date-picker";
@@ -556,36 +557,40 @@ export function EditApplicationModal({
                     key={event.id}
                     className="group/event flex w-full items-start gap-1 rounded-lg px-1 py-1 transition-colors hover:bg-muted"
                   >
-                    <button
-                      type="button"
-                      onClick={() => beginEditEvent(event)}
-                      className="flex min-w-0 flex-1 items-start gap-3 rounded-md px-1.5 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      aria-label={`Edit event: ${event.title}`}
-                    >
-                      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-chart-4" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-foreground">
-                          {event.title}
-                        </span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {formatEventDate(event.event_date)}
-                        </span>
-                        {event.notes && (
-                          <span className="mt-1 block line-clamp-2 text-xs text-muted-foreground">
-                            {event.notes}
+                    <Tooltip label="Edit event">
+                      <button
+                        type="button"
+                        onClick={() => beginEditEvent(event)}
+                        className="flex min-w-0 flex-1 items-start gap-3 rounded-md px-1.5 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label={`Edit event: ${event.title}`}
+                      >
+                        <span className="mt-1.5 size-2 shrink-0 rounded-full bg-chart-4" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            {event.title}
                           </span>
-                        )}
-                      </span>
-                      <Pencil className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-60 transition-opacity group-hover/event:opacity-100" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => beginDeleteEvent(event)}
-                      className="mt-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground opacity-60 transition-opacity hover:text-destructive group-hover/event:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      aria-label={`Delete event: ${event.title}`}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                          <span className="mt-0.5 block text-xs text-muted-foreground">
+                            {formatEventDate(event.event_date)}
+                          </span>
+                          {event.notes && (
+                            <span className="mt-1 block line-clamp-2 text-xs text-muted-foreground">
+                              {event.notes}
+                            </span>
+                          )}
+                        </span>
+                        <Pencil className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-60 transition-opacity group-hover/event:opacity-100" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip label="Delete event">
+                      <button
+                        type="button"
+                        onClick={() => beginDeleteEvent(event)}
+                        className="mt-0.5 shrink-0 rounded-md p-1.5 text-muted-foreground opacity-60 transition-opacity hover:text-destructive group-hover/event:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label={`Delete event: ${event.title}`}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </Tooltip>
                   </div>
                 ))}
               </div>
