@@ -22,9 +22,11 @@ const FILTERS: { label: string; value: StatusFilter }[] = [
 export function ApplicationList({
   applications,
   events,
+  userId,
 }: {
   applications: Application[];
   events: Event[];
+  userId: string;
 }) {
   const [filter, setFilter] = useState<StatusFilter>("all");
 
@@ -82,7 +84,7 @@ export function ApplicationList({
               </tr>
             ) : (
               filtered.map((app) => (
-                <ApplicationRow key={app.id} application={app} events={events} />
+                <ApplicationRow key={app.id} application={app} events={events} userId={userId} />
               ))
             )}
           </tbody>

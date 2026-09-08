@@ -23,7 +23,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { withTimeout } from "@/lib/utils";
 import type { Tables, ApplicationStatus } from "@/types/supabase";
+
+const SUPABASE_TIMEOUT_MS = 10_000;
 
 type Application = Tables<"applications">;
 type Event = Tables<"events">;
@@ -92,11 +95,13 @@ export function EditApplicationModal({
   events,
   open,
   onOpenChange,
+  userId,
 }: {
   application: Application;
   events: Event[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  userId: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -215,23 +220,18 @@ export function EditApplicationModal({
       };
 
       if (editingEventId === "new") {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) {
-          setEventError("Not authenticated.");
-          return;
-        }
-
-        const { data, error: insertError } = await supabase
-          .from("events")
-          .insert({
-            ...eventValues,
-            user_id: user.id,
-            application_id: application.id,
-          })
-          .select("*")
-          .single();
+        const { data, error: insertError } = await withTimeout(
+          supabase
+            .from("events")
+            .insert({
+              ...eventValues,
+              user_id: userId,
+              application_id: application.id,
+            })
+            .select("*")
+            .single(),
+          SUPABASE_TIMEOUT_MS
+        );
 
         if (insertError) {
           setEventError(insertError.message);
@@ -239,12 +239,15 @@ export function EditApplicationModal({
         }
         setLocalEvents((previous) => [...previous, data]);
       } else if (editingEventId) {
-        const { data, error: updateError } = await supabase
-          .from("events")
-          .update(eventValues)
-          .eq("id", editingEventId)
-          .select("*")
-          .single();
+        const { data, error: updateError } = await withTimeout(
+          supabase
+            .from("events")
+            .update(eventValues)
+            .eq("id", editingEventId)
+            .select("*")
+            .single(),
+          SUPABASE_TIMEOUT_MS
+        );
 
         if (updateError) {
           setEventError(updateError.message);

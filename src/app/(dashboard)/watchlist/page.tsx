@@ -26,7 +26,7 @@ export default async function WatchlistPage() {
           Sites you&apos;re monitoring for job openings.
         </p>
       </div>
-      <WatchlistPanel items={items ?? []} />
+      <WatchlistPanel items={items ?? []} userId={user.id} />
     </div>
   );
 }

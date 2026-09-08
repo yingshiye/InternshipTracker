@@ -15,13 +15,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { normalizeUrl } from "@/lib/url";
+import { withTimeout } from "@/lib/utils";
+
+const SUPABASE_TIMEOUT_MS = 10_000;
 
 const EMPTY_FORM = {
   company: "",
   url: "",
 };
 
-export function AddWatchlistModal() {
+export function AddWatchlistModal({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,34 +50,32 @@ export function AddWatchlistModal() {
     }
 
     const supabase = getSupabaseBrowserClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
-      setError("Not authenticated.");
+    try {
+      // The cron job (using the service-role key) is the only writer of
+      // url_snapshots — it creates the row on its first pass over this URL.
+      const { error: insertError } = await withTimeout(
+        supabase.from("user_watchlist").insert({
+          user_id: userId,
+          company: form.company,
+          url: normalizedUrl,
+        }),
+        SUPABASE_TIMEOUT_MS
+      );
+
+      if (insertError) {
+        setError(insertError.message);
+        return;
+      }
+
+      setOpen(false);
+      setForm(EMPTY_FORM);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // The cron job (using the service-role key) is the only writer of
-    // url_snapshots — it creates the row on its first pass over this URL.
-    const { error: insertError } = await supabase.from("user_watchlist").insert({
-      user_id: user.id,
-      company: form.company,
-      url: normalizedUrl,
-    });
-
-    if (insertError) {
-      setError(insertError.message);
-      setLoading(false);
-      return;
-    }
-
-    setOpen(false);
-    setForm(EMPTY_FORM);
-    setLoading(false);
-    router.refresh();
   }
 
   return (

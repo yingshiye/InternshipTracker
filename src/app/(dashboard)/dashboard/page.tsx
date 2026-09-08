@@ -44,12 +44,13 @@ export default async function DashboardPage() {
         <AddApplicationModal userId={user.id} />
       </div>
       <StatsBar applications={apps} />
-      <ApplicationList applications={apps} events={allEvents} />
+      <ApplicationList applications={apps} events={allEvents} userId={user.id} />
       {upcomingEvents.length > 0 && (
         <UpcomingPanel
           events={upcomingEvents}
           allEvents={allEvents}
           applications={apps}
+          userId={user.id}
         />
       )}
     </div>

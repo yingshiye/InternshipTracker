@@ -21,7 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { withTimeout } from "@/lib/utils";
 import type { Tables } from "@/types/supabase";
+
+const SUPABASE_TIMEOUT_MS = 10_000;
 
 type Application = Tables<"applications">;
 
@@ -45,10 +48,12 @@ export function AddEventModal({
   application,
   open,
   onOpenChange,
+  userId,
 }: {
   application: Application;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  userId: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,23 +85,17 @@ export function AddEventModal({
     setLoading(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        setError("Not authenticated.");
-        return;
-      }
-
-      const { error } = await supabase.from("events").insert({
-        user_id: user.id,
-        application_id: application.id,
-        title: form.title,
-        event_type: form.event_type || null,
-        event_date: new Date(form.event_date).toISOString(),
-        notes: form.notes || null,
-      });
+      const { error } = await withTimeout(
+        supabase.from("events").insert({
+          user_id: userId,
+          application_id: application.id,
+          title: form.title,
+          event_type: form.event_type || null,
+          event_date: new Date(form.event_date).toISOString(),
+          notes: form.notes || null,
+        }),
+        SUPABASE_TIMEOUT_MS
+      );
 
       if (error) {
         setError(error.message);
@@ -104,8 +103,8 @@ export function AddEventModal({
       }
       handleOpenChange(false);
       router.refresh();
-    } catch {
-      setError("The event couldn’t be added. Try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The event couldn’t be added. Try again.");
     } finally {
       setLoading(false);
     }

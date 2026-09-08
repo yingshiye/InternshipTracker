@@ -50,9 +50,11 @@ const STATUS_LABELS: Record<Application["status"], string> = {
 export function ApplicationRow({
   application,
   events,
+  userId,
 }: {
   application: Application;
   events: Event[];
+  userId: string;
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -230,6 +232,7 @@ export function ApplicationRow({
           )}
           open={editOpen}
           onOpenChange={setEditOpen}
+          userId={userId}
         />
       )}
 
@@ -237,6 +240,7 @@ export function ApplicationRow({
         application={application}
         open={addEventOpen}
         onOpenChange={setAddEventOpen}
+        userId={userId}
       />
 
       {resumeOpen && (

@@ -18,14 +18,14 @@ import { AddWatchlistModal } from "./AddWatchlistModal";
 
 type WatchlistItem = Tables<"user_watchlist">;
 
-export function WatchlistPanel({ items }: { items: WatchlistItem[] }) {
+export function WatchlistPanel({ items, userId }: { items: WatchlistItem[]; userId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
           Watchlist
         </h2>
-        <AddWatchlistModal />
+        <AddWatchlistModal userId={userId} />
       </div>
 
       {items.length === 0 ? (

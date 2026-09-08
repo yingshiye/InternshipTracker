@@ -20,10 +20,12 @@ export function UpcomingPanel({
   events,
   allEvents,
   applications,
+  userId,
 }: {
   events: Event[];
   allEvents: Event[];
   applications: Application[];
+  userId: string;
 }) {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const applicationsById = new Map(applications.map((application) => [application.id, application]));
@@ -76,6 +78,7 @@ export function UpcomingPanel({
         )}
         open
         onOpenChange={(open) => !open && setSelectedApplication(null)}
+        userId={userId}
       />
     )}
     </>
