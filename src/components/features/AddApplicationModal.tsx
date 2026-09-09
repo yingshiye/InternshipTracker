@@ -147,6 +147,8 @@ export function AddApplicationModal({ userId }: { userId: string }) {
               value={form.role}
               onChange={(v) => set("role", v)}
               options={roleOptions.options}
+              removableOptions={roleOptions.options}
+              onRemoveOption={roleOptions.removeOption}
               required
             />
           </div>
@@ -158,6 +160,8 @@ export function AddApplicationModal({ userId }: { userId: string }) {
               value={form.location}
               onChange={(v) => set("location", v)}
               options={locationOptions.options}
+              removableOptions={locationOptions.options}
+              onRemoveOption={locationOptions.removeOption}
             />
           </div>
           <div className="flex flex-col gap-1.5">

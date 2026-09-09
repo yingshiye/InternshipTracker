@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Popover } from "radix-ui";
+import { XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,8 @@ type ComboboxProps = {
   value: string;
   onChange: (value: string) => void;
   options: string[];
+  removableOptions?: string[];
+  onRemoveOption?: (value: string) => void | Promise<void>;
   placeholder?: string;
   className?: string;
   required?: boolean;
@@ -21,6 +24,8 @@ export function Combobox({
   value,
   onChange,
   options,
+  removableOptions = [],
+  onRemoveOption,
   placeholder,
   className,
   required,
@@ -30,6 +35,11 @@ export function Combobox({
   const [portalContainer, setPortalContainer] = useState<HTMLElement>();
   const inputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const removableOptionKeys = useMemo(
+    () => new Set(removableOptions.map((option) => option.toLowerCase())),
+    [removableOptions]
+  );
 
   const filtered = useMemo(() => {
     const query = value.trim().toLowerCase();
@@ -53,6 +63,14 @@ export function Combobox({
     inputRef.current?.blur();
   }
 
+  function removeSavedOption(option: string) {
+    if (value.trim().toLowerCase() === option.toLowerCase()) {
+      onChange("");
+    }
+    void Promise.resolve(onRemoveOption?.(option)).catch(() => undefined);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -70,6 +88,12 @@ export function Combobox({
         const selected =
           highlighted < filtered.length ? filtered[highlighted] : value.trim();
         selectValue(selected);
+      }
+    } else if (event.key === "Delete") {
+      const option = filtered[highlighted];
+      if (open && option && removableOptionKeys.has(option.toLowerCase())) {
+        event.preventDefault();
+        removeSavedOption(option);
       }
     } else if (event.key === "Escape") {
       setOpen(false);
@@ -116,34 +140,67 @@ export function Combobox({
             className="z-[100] w-(--radix-popover-trigger-width) rounded-lg border border-border bg-popover text-popover-foreground shadow-lg outline-none"
           >
             <div className="max-h-56 overflow-y-auto overscroll-contain p-1">
-              {filtered.map((option, index) => (
-                <button
-                  key={option}
-                  ref={(el) => {
-                    itemRefs.current[index] = el;
-                  }}
-                  type="button"
-                  // onMouseDown fires before the input's onBlur closes the popover
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    selectValue(option);
-                  }}
-                  className={cn(
-                    "flex w-full cursor-default items-center rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground",
-                    highlighted === index && "bg-accent text-accent-foreground"
-                  )}
-                >
-                  {option}
-                </button>
-              ))}
+              {filtered.map((option, index) => {
+                const removable = removableOptionKeys.has(option.toLowerCase());
+
+                return (
+                  <div
+                    key={option}
+                    className={cn(
+                      "flex w-full items-center rounded-md text-sm hover:bg-accent hover:text-accent-foreground",
+                      highlighted === index && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    <button
+                      ref={(el) => {
+                        itemRefs.current[index] = el;
+                      }}
+                      type="button"
+                      tabIndex={-1}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                      }}
+                      onClick={() => {
+                        selectValue(option);
+                      }}
+                      className="flex min-w-0 flex-1 cursor-default items-center px-2 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="truncate">{option}</span>
+                    </button>
+                    {removable && onRemoveOption && (
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        aria-label={`Remove ${option} from saved suggestions`}
+                        aria-keyshortcuts="Delete"
+                        title="Remove saved suggestion"
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          removeSavedOption(option);
+                        }}
+                        className="mr-0.5 flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-70 hover:bg-background/70 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <XIcon className="size-3.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
               {showAddRow && (
                 <button
                   ref={(el) => {
                     itemRefs.current[filtered.length] = el;
                   }}
                   type="button"
+                  tabIndex={-1}
                   onMouseDown={(event) => {
                     event.preventDefault();
+                  }}
+                  onClick={() => {
                     selectValue(value.trim());
                   }}
                   className={cn(

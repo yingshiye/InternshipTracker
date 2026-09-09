@@ -348,6 +348,8 @@ export function EditApplicationModal({
                 value={form.role}
                 onChange={(value) => set("role", value)}
                 options={roleOptions.options}
+                removableOptions={roleOptions.options}
+                onRemoveOption={roleOptions.removeOption}
                 required
               />
             </div>
@@ -359,6 +361,8 @@ export function EditApplicationModal({
                 value={form.location}
                 onChange={(value) => set("location", value)}
                 options={locationOptions.options}
+                removableOptions={locationOptions.options}
+                onRemoveOption={locationOptions.removeOption}
               />
             </div>
             <div className="flex flex-col gap-1.5">

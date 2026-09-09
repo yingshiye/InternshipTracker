@@ -216,6 +216,7 @@ export type Database = {
           user_id: string;
           field: "role" | "location";
           value: string;
+          hidden: boolean;
           created_at: string;
         };
         Insert: {
@@ -223,6 +224,7 @@ export type Database = {
           user_id: string;
           field: "role" | "location";
           value: string;
+          hidden?: boolean;
           created_at?: string;
         };
         Update: {
@@ -230,6 +232,7 @@ export type Database = {
           user_id?: string;
           field?: "role" | "location";
           value?: string;
+          hidden?: boolean;
           created_at?: string;
         };
         Relationships: [];
