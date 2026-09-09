@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Combobox } from "@/components/ui/combobox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +26,7 @@ import {
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { normalizeUrl } from "@/lib/url";
 import { withTimeout } from "@/lib/utils";
+import { useFieldOptions } from "@/lib/hooks/useFieldOptions";
 import type { ApplicationStatus } from "@/types/supabase";
 
 const SUPABASE_TIMEOUT_MS = 10_000;
@@ -54,6 +56,8 @@ export function AddApplicationModal({ userId }: { userId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const router = useRouter();
+  const roleOptions = useFieldOptions("role", userId);
+  const locationOptions = useFieldOptions("location", userId);
 
   function set(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -113,6 +117,9 @@ export function AddApplicationModal({ userId }: { userId: string }) {
         );
       }
 
+      roleOptions.addOption(form.role);
+      if (form.location) locationOptions.addOption(form.location);
+
       setOpen(false);
       setForm(EMPTY_FORM);
       router.refresh();
@@ -150,21 +157,23 @@ export function AddApplicationModal({ userId }: { userId: string }) {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="role">Role</Label>
-            <Input
+            <Combobox
               id="role"
               placeholder="Software Engineer Intern"
               value={form.role}
-              onChange={(e) => set("role", e.target.value)}
+              onChange={(v) => set("role", v)}
+              options={roleOptions.options}
               required
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="location">Location</Label>
-            <Input
+            <Combobox
               id="location"
               placeholder="New York, NY or Remote"
               value={form.location}
-              onChange={(e) => set("location", e.target.value)}
+              onChange={(v) => set("location", v)}
+              options={locationOptions.options}
             />
           </div>
           <div className="flex flex-col gap-1.5">
