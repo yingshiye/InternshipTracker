@@ -50,10 +50,12 @@ const STATUS_LABELS: Record<Application["status"], string> = {
 export function ApplicationRow({
   application,
   events,
+  nextEvent,
   userId,
 }: {
   application: Application;
   events: Event[];
+  nextEvent: Event | null;
   userId: string;
 }) {
   const [editOpen, setEditOpen] = useState(false);
@@ -67,16 +69,6 @@ export function ApplicationRow({
   const initials = application.company.slice(0, 2).toUpperCase();
 
   const now = new Date();
-  const nextEvent = events
-    .filter(
-      (e) =>
-        e.application_id === application.id && new Date(e.event_date) > now
-    )
-    .sort(
-      (a, b) =>
-        new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
-    )[0];
-
   const nextEventDate = nextEvent ? new Date(nextEvent.event_date) : null;
   const isEventSoon =
     nextEventDate !== null &&
