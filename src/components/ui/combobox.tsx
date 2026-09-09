@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Popover } from "radix-ui";
-import { ChevronUpIcon, ChevronDownIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -17,54 +16,6 @@ type ComboboxProps = {
   required?: boolean;
 };
 
-// Scrolls the list by a fixed step while the button is held down, mirroring
-// select.tsx's SelectScrollUpButton/SelectScrollDownButton — native wheel
-// scroll on a Popover portaled inside a modal Dialog is unreliable, so this
-// gives a working affordance for lists taller than the panel's max height.
-function ScrollButton({
-  direction,
-  onScroll,
-}: {
-  direction: "up" | "down";
-  onScroll: (amount: number) => void;
-}) {
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  function start() {
-    stop();
-    const amount = direction === "up" ? -40 : 40;
-    onScroll(amount);
-    intervalRef.current = setInterval(() => onScroll(amount), 60);
-  }
-
-  function stop() {
-    if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }
-
-  useEffect(() => stop, []);
-
-  const Icon = direction === "up" ? ChevronUpIcon : ChevronDownIcon;
-
-  return (
-    <button
-      type="button"
-      tabIndex={-1}
-      onMouseDown={(event) => {
-        event.preventDefault();
-        start();
-      }}
-      onMouseUp={stop}
-      onMouseLeave={stop}
-      className="flex w-full cursor-default items-center justify-center py-1 text-muted-foreground hover:text-foreground"
-    >
-      <Icon className="size-3.5" />
-    </button>
-  );
-}
-
 export function Combobox({
   id,
   value,
@@ -76,18 +27,9 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
-  const [canScrollUp, setCanScrollUp] = useState(false);
-  const [canScrollDown, setCanScrollDown] = useState(false);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement>();
   const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  function updateScrollState() {
-    const el = listRef.current;
-    if (!el) return;
-    setCanScrollUp(el.scrollTop > 0);
-    setCanScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
-  }
 
   const filtered = useMemo(() => {
     const query = value.trim().toLowerCase();
@@ -104,10 +46,6 @@ export function Combobox({
   useEffect(() => {
     if (open) itemRefs.current[highlighted]?.scrollIntoView({ block: "nearest" });
   }, [highlighted, open]);
-
-  useEffect(() => {
-    if (open) updateScrollState();
-  }, [open, filtered, showAddRow]);
 
   function selectValue(next: string) {
     onChange(next);
@@ -154,33 +92,30 @@ export function Combobox({
             setHighlighted(0);
             setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={(event) => {
+            // A modal Dialog only permits wheel/touch scrolling within its
+            // content. Keep the popover in that subtree instead of portaling
+            // it to document.body, where Radix's scroll lock would block it.
+            setPortalContainer(
+              event.currentTarget.closest<HTMLElement>(
+                "[data-slot='dialog-content']"
+              ) ?? undefined
+            );
+            setOpen(true);
+          }}
           onBlur={() => setOpen(false)}
           onKeyDown={handleKeyDown}
         />
       </Popover.Anchor>
       {rowCount > 0 && (
-        <Popover.Portal>
+        <Popover.Portal container={portalContainer}>
           <Popover.Content
             align="start"
             sideOffset={4}
             onOpenAutoFocus={(event) => event.preventDefault()}
-            className="z-[100] flex max-h-56 w-(--radix-popover-trigger-width) flex-col rounded-lg border border-border bg-popover text-popover-foreground shadow-lg outline-none"
+            className="z-[100] w-(--radix-popover-trigger-width) rounded-lg border border-border bg-popover text-popover-foreground shadow-lg outline-none"
           >
-            {canScrollUp && (
-              <ScrollButton
-                direction="up"
-                onScroll={(amount) => {
-                  if (listRef.current) listRef.current.scrollTop += amount;
-                  updateScrollState();
-                }}
-              />
-            )}
-            <div
-              ref={listRef}
-              onScroll={updateScrollState}
-              className="overflow-y-auto p-1"
-            >
+            <div className="max-h-56 overflow-y-auto overscroll-contain p-1">
               {filtered.map((option, index) => (
                 <button
                   key={option}
@@ -220,15 +155,6 @@ export function Combobox({
                 </button>
               )}
             </div>
-            {canScrollDown && (
-              <ScrollButton
-                direction="down"
-                onScroll={(amount) => {
-                  if (listRef.current) listRef.current.scrollTop += amount;
-                  updateScrollState();
-                }}
-              />
-            )}
           </Popover.Content>
         </Popover.Portal>
       )}
