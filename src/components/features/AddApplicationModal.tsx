@@ -101,22 +101,6 @@ export function AddApplicationModal({ userId }: { userId: string }) {
         return;
       }
 
-      // The cron job (using the service-role key) is the only writer of
-      // url_snapshots — it creates the row on its first pass over this URL.
-      if (normalizedJobUrl) {
-        await withTimeout(
-          supabase.from("user_watchlist").upsert(
-            {
-              user_id: userId,
-              company: form.company,
-              url: normalizedJobUrl,
-            },
-            { onConflict: "user_id,url", ignoreDuplicates: true }
-          ),
-          SUPABASE_TIMEOUT_MS
-        );
-      }
-
       roleOptions.addOption(form.role);
       if (form.location) locationOptions.addOption(form.location);
 
