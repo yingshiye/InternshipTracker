@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { normalizeUrl } from "@/lib/url";
+import { localDateStamp } from "@/lib/date";
 import { withTimeout } from "@/lib/utils";
 import { useFieldOptions } from "@/lib/hooks/useFieldOptions";
 import type { ApplicationStatus } from "@/types/supabase";
@@ -61,6 +62,17 @@ export function AddApplicationModal({ userId }: { userId: string }) {
 
   function set(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      setForm((prev) =>
+        prev.applied_date
+          ? prev
+          : { ...prev, applied_date: localDateStamp() }
+      );
+    }
+    setOpen(nextOpen);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -115,7 +127,7 @@ export function AddApplicationModal({ userId }: { userId: string }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5">
           <Plus className="h-4 w-4" />

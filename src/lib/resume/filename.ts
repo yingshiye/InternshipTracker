@@ -10,6 +10,10 @@
  * read like a document name.
  */
 
+import { localDateStamp } from "@/lib/date";
+
+export { localDateStamp } from "@/lib/date";
+
 const MAX_COMPONENT_LENGTH = 40;
 const MAX_TOTAL_LENGTH = 120;
 
@@ -30,14 +34,6 @@ export function sanitizeFilenameComponent(input: string): string {
     .replace(/^[._]+/, "")
     .replace(/[._]+$/, "");
   return cleaned.slice(0, MAX_COMPONENT_LENGTH).replace(/_+$/, "");
-}
-
-/** Local calendar date as YYYY-MM-DD — never `toISOString`, which shifts by timezone. */
-export function localDateStamp(date: Date = new Date()): string {
-  const y = String(date.getFullYear()).padStart(4, "0");
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }
 
 export type FilenameInput = {
