@@ -23,11 +23,11 @@ export function LogoutButton({ collapsed = false }: { collapsed?: boolean }) {
       aria-label="Sign out"
       className={cn(
         "flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        collapsed && "justify-center px-0"
+        collapsed && "md:justify-center md:px-0"
       )}
     >
       <LogOut className="h-4 w-4" />
-      {!collapsed && "Sign out"}
+      <span className={cn(collapsed && "md:hidden")}>Sign out</span>
     </button>
   );
 

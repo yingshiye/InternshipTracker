@@ -85,9 +85,14 @@ export function DashboardShell({
           <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
             IT
           </span>
-          {!collapsed && (
-            <span className="truncate text-sm font-semibold tracking-tight">Internship Tracker</span>
-          )}
+          <span
+            className={cn(
+              "truncate text-sm font-semibold tracking-tight",
+              collapsed && "md:hidden",
+            )}
+          >
+            Internship Tracker
+          </span>
         </Link>
         <Tooltip label="Close navigation">
           <button
@@ -117,17 +122,17 @@ export function DashboardShell({
                 active
                   ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                   : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
-                collapsed && "justify-center px-0"
+                collapsed && "md:justify-center md:px-0"
               )}
               >
                 <Icon className="size-4 shrink-0" />
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                <span className={cn("truncate", collapsed && "md:hidden")}>{item.label}</span>
                 {item.href === "/watchlist" && changedCount > 0 && (
                   <span
                     aria-label={`${changedCount} watchlist changes`}
                     className={cn(
                       "ml-auto size-1.5 rounded-full bg-amber-500",
-                      collapsed && "absolute right-2 top-2"
+                      collapsed && "md:absolute md:right-2 md:top-2"
                     )}
                   />
                 )}
@@ -145,11 +150,13 @@ export function DashboardShell({
             aria-label={dark ? "Use light theme" : "Use dark theme"}
             className={cn(
               "flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              collapsed && "justify-center px-0"
+              collapsed && "md:justify-center md:px-0"
             )}
           >
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            {!collapsed && <span>{dark ? "Light mode" : "Dark mode"}</span>}
+            <span className={cn(collapsed && "md:hidden")}>
+              {dark ? "Light mode" : "Dark mode"}
+            </span>
           </button>
         </Tooltip>
         <LogoutButton collapsed={collapsed} />
