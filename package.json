@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/url.test.ts src/app/api/cron/check-jobs/logic.test.ts src/lib/resume/validate.test.ts src/lib/resume/rpc.test.ts src/lib/resume/compare.test.ts src/lib/resume/library.test.ts src/lib/resume/resumes.test.ts src/lib/resume/sections.test.ts src/lib/resume/entries.test.ts src/lib/resume/dates.test.ts src/lib/resume/style.test.ts src/lib/resume/measure.test.ts src/lib/resume/fingerprint.test.ts src/lib/resume/check.test.ts src/lib/resume/step2-wrappers.test.ts src/lib/resume/snapshot.test.ts src/lib/resume/version-compare.test.ts src/lib/resume/filename.test.ts src/lib/resume/preflight.test.ts src/lib/resume/export-machine.test.ts src/lib/resume/step3-wrappers.test.ts",
+    "test": "tsx --test src/lib/url.test.ts src/app/api/cron/check-jobs/logic.test.ts src/lib/prep/roadmap.test.ts src/lib/resume/validate.test.ts src/lib/resume/rpc.test.ts src/lib/resume/compare.test.ts src/lib/resume/library.test.ts src/lib/resume/resumes.test.ts src/lib/resume/sections.test.ts src/lib/resume/entries.test.ts src/lib/resume/dates.test.ts src/lib/resume/style.test.ts src/lib/resume/measure.test.ts src/lib/resume/fingerprint.test.ts src/lib/resume/check.test.ts src/lib/resume/step2-wrappers.test.ts src/lib/resume/snapshot.test.ts src/lib/resume/version-compare.test.ts src/lib/resume/filename.test.ts src/lib/resume/preflight.test.ts src/lib/resume/export-machine.test.ts src/lib/resume/step3-wrappers.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {

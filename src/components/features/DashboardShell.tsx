@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   ChevronLeft,
+  BookOpenCheck,
   Eye,
   FileText,
   Layers,
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/prep", label: "Prep", icon: BookOpenCheck },
   { href: "/watchlist", label: "Watchlist", icon: Eye },
   { href: "/resumes", label: "Resumes", icon: FileText },
   { href: "/resume-blocks", label: "Resume blocks", icon: Layers },
