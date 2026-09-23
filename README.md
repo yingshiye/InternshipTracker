@@ -11,6 +11,7 @@ A full-stack workspace for running an internship search: track every application
 - **Resume builder** — assemble tailored resumes from reusable entries and bullets, reorder content, tune layout settings, and preview the result live.
 - **Versioned exports** — run preflight checks, save snapshots, compare or restore versions, attach the submitted version to an application, and export to PDF.
 - **Career-page watchlist** — monitor job pages and surface content changes through a protected scheduled job.
+- **Interview preparation** — follow a three-week SWE recruiting sprint with linked NeetCode and LeetCode work, mock OAs, deliberate review, and persisted progress.
 - **Private user data** — Supabase Auth and PostgreSQL row-level security isolate each user's records.
 
 ## Stack
@@ -103,6 +104,7 @@ Database-level RLS and RPC checks live in `supabase/tests/`. Each test file docu
 | `/forgot-password`, `/reset-password` | Password recovery |
 | `/dashboard` | Application pipeline, statistics, and upcoming events |
 | `/watchlist` | Career-page change monitor |
+| `/prep` | 21-day SWE interview preparation roadmap |
 | `/resumes` | Resume list |
 | `/resumes/[resumeId]` | Resume editor, checks, versions, and export |
 | `/resume-blocks` | Reusable resume-entry and bullet library |
