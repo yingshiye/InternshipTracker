@@ -210,6 +210,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      study_task_progress: {
+        Row: {
+          user_id: string;
+          task_id: string;
+          status: "not_started" | "review" | "completed";
+          completed_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          task_id: string;
+          status?: "not_started" | "review" | "completed";
+          completed_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          task_id?: string;
+          status?: "not_started" | "review" | "completed";
+          completed_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       user_field_options: {
         Row: {
           id: string;
