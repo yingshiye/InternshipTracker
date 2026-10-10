@@ -14,6 +14,7 @@ type ComboboxProps = {
   options: string[];
   removableOptions?: string[];
   onRemoveOption?: (value: string) => void | Promise<void>;
+  onSaveOption?: (value: string) => void | Promise<void>;
   placeholder?: string;
   className?: string;
   required?: boolean;
@@ -26,6 +27,7 @@ export function Combobox({
   options,
   removableOptions = [],
   onRemoveOption,
+  onSaveOption,
   placeholder,
   className,
   required,
@@ -71,6 +73,13 @@ export function Combobox({
     requestAnimationFrame(() => inputRef.current?.focus());
   }
 
+  function saveOption(option: string) {
+    onChange(option);
+    void Promise.resolve(onSaveOption?.(option)).catch(() => undefined);
+    setOpen(false);
+    inputRef.current?.blur();
+  }
+
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -85,9 +94,16 @@ export function Combobox({
     } else if (event.key === "Enter") {
       if (open && rowCount > 0) {
         event.preventDefault();
-        const selected =
-          highlighted < filtered.length ? filtered[highlighted] : value.trim();
-        selectValue(selected);
+        if (highlighted < filtered.length) {
+          selectValue(filtered[highlighted]);
+        } else {
+          const option = value.trim();
+          if (onSaveOption) {
+            saveOption(option);
+          } else {
+            selectValue(option);
+          }
+        }
       }
     } else if (event.key === "Delete") {
       const option = filtered[highlighted];
@@ -201,14 +217,20 @@ export function Combobox({
                     event.preventDefault();
                   }}
                   onClick={() => {
-                    selectValue(value.trim());
+                    const option = value.trim();
+                    if (onSaveOption) {
+                      saveOption(option);
+                    } else {
+                      selectValue(option);
+                    }
                   }}
                   className={cn(
                     "flex w-full cursor-default items-center rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                     highlighted === filtered.length && "bg-accent text-accent-foreground"
                   )}
                 >
-                  Add &ldquo;{value.trim()}&rdquo;
+                  {onSaveOption ? "Save" : "Add"} &ldquo;{value.trim()}&rdquo;
+                  {onSaveOption && " as a suggestion"}
                 </button>
               )}
             </div>

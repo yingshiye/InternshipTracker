@@ -199,7 +199,6 @@ export function EditApplicationModal({
       return;
     }
 
-    roleOptions.addOption(form.role);
     if (form.location) locationOptions.addOption(form.location);
 
     setLoading(false);
@@ -350,6 +349,7 @@ export function EditApplicationModal({
                 options={roleOptions.options}
                 removableOptions={roleOptions.options}
                 onRemoveOption={roleOptions.removeOption}
+                onSaveOption={roleOptions.addOption}
                 required
               />
             </div>

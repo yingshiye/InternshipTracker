@@ -113,7 +113,6 @@ export function AddApplicationModal({ userId }: { userId: string }) {
         return;
       }
 
-      roleOptions.addOption(form.role);
       if (form.location) locationOptions.addOption(form.location);
 
       setOpen(false);
@@ -161,6 +160,7 @@ export function AddApplicationModal({ userId }: { userId: string }) {
               options={roleOptions.options}
               removableOptions={roleOptions.options}
               onRemoveOption={roleOptions.removeOption}
+              onSaveOption={roleOptions.addOption}
               required
             />
           </div>
