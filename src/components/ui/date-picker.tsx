@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { Popover } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -50,6 +50,7 @@ function PickerTrigger({
   className,
   ariaLabel,
   inline = false,
+  icon: Icon = CalendarDays,
   ...triggerProps
 }: {
   id?: string;
@@ -59,6 +60,7 @@ function PickerTrigger({
   className?: string;
   ariaLabel?: string;
   inline?: boolean;
+  icon?: typeof CalendarDays;
 } & Omit<React.ComponentProps<"button">, "id" | "disabled" | "className" | "aria-label">) {
   return (
     <button
@@ -74,7 +76,7 @@ function PickerTrigger({
       )}
     >
       <span className={cn(inline ? "whitespace-nowrap" : "truncate", !label && "text-muted-foreground")}>{label || placeholder}</span>
-      {!inline && <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" />}
+      {!inline && <Icon className="size-3.5 shrink-0 text-muted-foreground" />}
     </button>
   );
 }
@@ -234,6 +236,61 @@ export function MonthPicker({
   );
 }
 
+export function TimePicker({ value, onChange, disabled, className, "aria-label": ariaLabel = "Time" }: PickerProps) {
+  const [open, setOpen] = useState(false);
+  const [hours = "09", minutes = "00"] = (value || "09:00").split(":");
+  const hour = Number(hours);
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
+  const select = (nextHour: number, nextMinute: string) => onChange(`${pad(nextHour)}:${nextMinute}`);
+  const columns = [
+    { label: "Hour", options: Array.from({ length: 12 }, (_, i) => pad(i + 1)), selected: pad(displayHour), change: (option: string) => select(Number(option) % 12 + (period === "PM" ? 12 : 0), minutes) },
+    { label: "Minute", options: Array.from({ length: 60 }, (_, i) => pad(i)), selected: minutes, change: (option: string) => select(hour, option) },
+    { label: "Period", options: ["AM", "PM"], selected: period, change: (option: string) => select(hour % 12 + (option === "PM" ? 12 : 0), minutes) },
+  ];
+
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <PickerTrigger label={value ? `${displayHour}:${minutes} ${period}` : ""} placeholder="Select time" disabled={disabled} className={className} ariaLabel={ariaLabel} icon={Clock} />
+      </Popover.Trigger>
+      <PickerPanel className="w-64 max-w-[calc(100vw-1.5rem)]">
+        <div className="mb-3 text-sm font-medium">Select time</div>
+        <div className="grid grid-cols-3 gap-2">
+          {columns.map((column) => (
+            <div key={column.label} className="min-w-0">
+              <div className="pb-2 text-center text-[11px] text-muted-foreground">{column.label}</div>
+              <div role="group" aria-label={column.label} className="relative h-48 overflow-y-auto overscroll-contain space-y-1 px-1">
+                {column.options.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-label={`${column.label}: ${option}`}
+                    aria-pressed={option === column.selected}
+                    ref={(node) => { if (node && option === column.selected && node.parentElement) node.parentElement.scrollTop = node.offsetTop - 64; }}
+                    onKeyDown={(event) => {
+                      const target = event.key === "ArrowDown" ? event.currentTarget.nextElementSibling : event.key === "ArrowUp" ? event.currentTarget.previousElementSibling : null;
+                      if (target instanceof HTMLButtonElement) {
+                        event.preventDefault();
+                        target.focus();
+                      }
+                    }}
+                    onClick={() => column.change(option)}
+                    className={cn("h-8 w-full rounded-md text-sm tabular-nums hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset", option === column.selected && "bg-primary text-primary-foreground hover:bg-primary")}
+                  >{option}</button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 flex justify-end border-t pt-2 text-xs">
+          <button type="button" className="rounded px-1.5 py-1 font-medium text-primary hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setOpen(false)}>Done</button>
+        </div>
+      </PickerPanel>
+    </Popover.Root>
+  );
+}
+
 export function DateTimePicker({ id, value, onChange, disabled, className, placeholder = "Select date", "aria-label": ariaLabel }: PickerProps) {
   const [datePart = "", timePart = ""] = value?.split("T") ?? [];
   return (
@@ -246,13 +303,11 @@ export function DateTimePicker({ id, value, onChange, disabled, className, place
         aria-label={ariaLabel}
         onChange={(date) => onChange(date ? `${date}T${timePart || "09:00"}` : "")}
       />
-      <input
-        type="time"
+      <TimePicker
         aria-label="Time"
         value={timePart}
         disabled={disabled || !datePart}
-        onChange={(event) => onChange(datePart ? `${datePart}T${event.target.value}` : "")}
-        className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+        onChange={(time) => onChange(datePart ? `${datePart}T${time}` : "")}
       />
     </div>
   );
